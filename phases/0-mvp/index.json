@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "backend-infra",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-23T22:35:26+0900",
+      "completed_at": "2026-04-23T23:10:00+0900",
+      "summary": "common(ApiResponse/ErrorCode/GlobalExceptionHandler/RequestIdFilter), config(SecurityConfig/JwtProvider/JwtAuthenticationFilter/WebSocketConfig/RedisConfig/RabbitMQConfig), infra(RedisGeoService/RabbitPublisher/MockPaymentGateway/PassThroughTranslator) 구현 완료. ./gradlew check 통과."
     },
     {
       "step": 2,
