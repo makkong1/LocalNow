@@ -7,7 +7,7 @@
       "name": "project-setup",
       "status": "completed",
       "started_at": "2026-04-23T22:26:55+0900",
-      "completed_at": "2026-04-23T22:35:00+0900",
+      "completed_at": "2026-04-23T22:35:26+0900",
       "summary": "docker-compose(MySQL/Redis/RabbitMQ), backend Gradle 뼈대(build.gradle+application.yml), web Next.js 뼈대 생성 완료. compileJava + npm build 통과."
     },
     {
