@@ -1,9 +1,55 @@
-node_modules/
-.next/
-out/
-next-env.d.ts
-tsconfig.tsbuildinfo
+# --- JVM / Gradle (backend) ---
+backend/.gradle/
+backend/build/
+backend/out/
+backend/bin/
+*.class
+*.log
+*.jar
+!backend/gradle/wrapper/gradle-wrapper.jar
 
-# phase execution outputs
+# --- Node / Next.js (web) ---
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+web/coverage/
+web/playwright-report/
+web/test-results/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Spring Boot 로컬 설정 (시크릿 포함) ---
+backend/src/main/resources/application-local.yml
+backend/src/test/resources/application-local.yml
+
+# --- Next.js 환경변수 ---
+web/.env
+web/.env.local
+web/.env.*.local
+
+# --- Docker 볼륨 (로컬) ---
+.data/
+
+# --- Python 실행 스크립트 부산물 ---
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- Harness 실행 로그 ---
 phases/**/phase*-output.json
 phases/**/step*-output.json
