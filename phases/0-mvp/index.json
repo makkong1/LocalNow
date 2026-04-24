@@ -31,7 +31,7 @@
       "name": "backend-request",
       "status": "completed",
       "started_at": "2026-04-24T17:09:30+0900",
-      "completed_at": "2026-04-24T17:30:00+0900",
+      "completed_at": "2026-04-24T17:31:43+0900",
       "summary": "request 도메인(HelpRequest 상태머신/RequestService/RequestController) + V3__request.sql + MatchDispatcher(AFTER_COMMIT) + Redis GEO 연동 + RabbitMQ 이벤트 발행 완료. budgetKrw=Long, Controller→Repository 직접 호출 없음. ./gradlew check 통과 (IT 테스트는 Docker Desktop 4.69.0 소켓 호환 이슈로 disabledWithoutDocker=true로 건너뜀)."
     },
     {
