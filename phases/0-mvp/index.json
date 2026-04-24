@@ -23,7 +23,8 @@
       "name": "backend-user",
       "status": "completed",
       "started_at": "2026-04-24T17:01:05+0900",
-      "summary": "user 도메인(User 엔티티/UserRole/UserRepository/UserService/UserController) + V2__user.sql + 4개 DTO 완료. /auth/signup(201), /auth/login(200), /auth/me(JWT) 동작. BCrypt 해시, JWT payload PII 없음. ./gradlew check 통과."
+      "summary": "user 도메인(User 엔티티/UserRole/UserRepository/UserService/UserController) + V2__user.sql + 4개 DTO 완료. /auth/signup(201), /auth/login(200), /auth/me(JWT) 동작. BCrypt 해시, JWT payload PII 없음. ./gradlew check 통과.",
+      "completed_at": "2026-04-24T17:09:30+0900"
     },
     {
       "step": 3,
