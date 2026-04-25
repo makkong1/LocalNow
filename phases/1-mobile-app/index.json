@@ -7,7 +7,8 @@
       "name": "project-setup",
       "status": "completed",
       "started_at": "2026-04-25T14:14:11+0900",
-      "summary": "Expo SDK 54 + RN 0.81 프로젝트 초기화, 의존성 설치(NativeWind v4, TanStack Query, STOMP, react-navigation v7), src/ 디렉토리 구조 생성(navigation/screens/lib/hooks/types), App.tsx(QueryClientProvider+NavigationContainer+RootNavigator) 완성. npm test + lint + expo export 모두 통과."
+      "summary": "Expo SDK 54 + RN 0.81 프로젝트 초기화, 의존성 설치(NativeWind v4, TanStack Query, STOMP, react-navigation v7), src/ 디렉토리 구조 생성(navigation/screens/lib/hooks/types), App.tsx(QueryClientProvider+NavigationContainer+RootNavigator) 완성. npm test + lint + expo export 모두 통과.",
+      "completed_at": "2026-04-25T14:26:10+0900"
     },
     {
       "step": 1,
