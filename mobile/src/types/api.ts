@@ -69,10 +69,11 @@ export interface SignupParams {
 // Help Request
 export type RequestType = 'GUIDE' | 'TRANSLATION' | 'FOOD' | 'EMERGENCY';
 export type HelpRequestStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
 /** @deprecated Use HelpRequestStatus */
 export type RequestStatus = HelpRequestStatus;
 
-export interface HelpRequest {
+export interface HelpRequestResponse {
   id: number;
   travelerId: number;
   requestType: RequestType;
@@ -84,6 +85,14 @@ export interface HelpRequest {
   budgetKrw: number;
   status: HelpRequestStatus;
   createdAt: string;
+}
+
+/** @deprecated Use HelpRequestResponse */
+export type HelpRequest = HelpRequestResponse;
+
+export interface HelpRequestPageResponse {
+  items: HelpRequestResponse[];
+  nextCursor: number | null;
 }
 
 export interface CreateRequestBody {
@@ -98,27 +107,37 @@ export interface CreateRequestBody {
 
 // Match Offer
 export type MatchOfferStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED';
+
 /** @deprecated Use MatchOfferStatus */
 export type OfferStatus = MatchOfferStatus;
 
-export interface MatchOffer {
+export interface MatchOfferResponse {
   id: number;
   requestId: number;
   guideId: number;
   guideName: string;
-  guideRating: number | null;
-  message: string | null;
+  guideAvgRating: number;
   status: MatchOfferStatus;
+  message: string | null;
   createdAt: string;
 }
 
+/** @deprecated Use MatchOfferResponse */
+export type MatchOffer = MatchOfferResponse;
+
 // Chat
-export interface ChatRoom {
-  roomId: number;
+export interface ChatRoomResponse {
+  id: number;
   requestId: number;
+  travelerId: number;
+  guideId: number;
+  createdAt: string;
 }
 
-export interface ChatMessage {
+/** @deprecated Use ChatRoomResponse */
+export type ChatRoom = ChatRoomResponse;
+
+export interface ChatMessageResponse {
   messageId: number;
   roomId: number;
   senderId: number;
@@ -126,6 +145,9 @@ export interface ChatMessage {
   sentAt: string;
   clientMessageId: string;
 }
+
+/** @deprecated Use ChatMessageResponse */
+export type ChatMessage = ChatMessageResponse;
 
 export interface SendMessageBody {
   content: string;
@@ -135,36 +157,38 @@ export interface SendMessageBody {
 // Payment
 export type PaymentStatus = 'AUTHORIZED' | 'CAPTURED' | 'REFUNDED' | 'FAILED';
 
-export interface PaymentIntent {
+export interface PaymentIntentResponse {
+  id: number;
   requestId: number;
-  payerId: number;
-  payeeId: number;
   amountKrw: number;
-  feeKrw: number;
+  platformFeeKrw: number;
+  guidePayout: number;
   status: PaymentStatus;
   createdAt: string;
 }
 
+/** @deprecated Use PaymentIntentResponse */
+export type PaymentIntent = PaymentIntentResponse;
+
 // Review
-export interface Review {
+export interface ReviewResponse {
   id: number;
   requestId: number;
-  travelerId: number;
-  guideId: number;
+  revieweeId: number;
   rating: number;
   comment: string | null;
   createdAt: string;
 }
 
-// Cursor pagination
-export interface CursorPage<T> {
-  items: T[];
-  nextCursor: string | null;
-}
+/** @deprecated Use ReviewResponse */
+export type Review = ReviewResponse;
 
-// STOMP notification payloads
-export type NotificationPayload =
+// STOMP push events
+export type StompEvent =
   | { type: 'NEW_REQUEST'; requestId: number; requestType: RequestType; budgetKrw: number }
-  | { type: 'MATCH_CONFIRMED'; requestId: number }
   | { type: 'OFFER_ACCEPTED'; guideId: number }
+  | { type: 'MATCH_CONFIRMED'; requestId: number }
   | { type: 'CHAT_MESSAGE'; roomId: number; preview: string };
+
+/** @deprecated Use StompEvent */
+export type NotificationPayload = StompEvent;
