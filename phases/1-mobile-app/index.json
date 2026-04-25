@@ -47,7 +47,8 @@
       "name": "chat-realtime",
       "status": "completed",
       "started_at": "2026-04-26T00:18:46+0900",
-      "summary": "stomp-client.ts(LocalNowStompClient 싱글톤/Native WebSocket/SockJS 없음), useRealtime(userId+role+activeRequestId 구독 관리/언마운트 disconnect), ChatBubble(amber/dark 말풍선), ChatScreen(FlatList+STOMP구독+uuid clientMessageId), AppNavigator(Root Stack+MainTabs+ChatRoom), TravelerScreen MATCHED→navigation.navigate('ChatRoom'), GuideScreen MATCH_CONFIRMED→ConfirmedChatButton. npm test 35 passed, lint clean."
+      "summary": "stomp-client.ts(LocalNowStompClient 싱글톤/Native WebSocket/SockJS 없음), useRealtime(userId+role+activeRequestId 구독 관리/언마운트 disconnect), ChatBubble(amber/dark 말풍선), ChatScreen(FlatList+STOMP구독+uuid clientMessageId), AppNavigator(Root Stack+MainTabs+ChatRoom), TravelerScreen MATCHED→navigation.navigate('ChatRoom'), GuideScreen MATCH_CONFIRMED→ConfirmedChatButton. npm test 35 passed, lint clean.",
+      "completed_at": "2026-04-26T00:32:40+0900"
     },
     {
       "step": 6,
