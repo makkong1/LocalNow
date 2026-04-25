@@ -1,4 +1,4 @@
-package com.localnow.config;
+package com.localnow.config.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token)) {
             try {
                 Claims claims = jwtProvider.validateToken(token);
-                Long userId = Long.parseLong(claims.getSubject());
+                Long userId = Long.valueOf(claims.getSubject());
                 String role = claims.get("role", String.class);
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                         userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));

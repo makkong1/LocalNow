@@ -1,5 +1,18 @@
 package com.localnow.request.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.localnow.common.ApiResponse;
 import com.localnow.common.ErrorCode;
 import com.localnow.request.dto.CreateRequestRequest;
@@ -7,11 +20,8 @@ import com.localnow.request.dto.HelpRequestPageResponse;
 import com.localnow.request.dto.HelpRequestResponse;
 import com.localnow.request.service.RequestService;
 import com.localnow.user.domain.UserRole;
+
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/requests")
@@ -25,7 +35,7 @@ public class RequestController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<HelpRequestResponse>> createRequest(
-            @Valid @RequestBody CreateRequestRequest request,
+            @Valid @RequestBody @NonNull CreateRequestRequest request,
             Authentication authentication) {
         if (!isTraveler(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -38,7 +48,7 @@ public class RequestController {
 
     @GetMapping("/open")
     public ResponseEntity<ApiResponse<HelpRequestPageResponse>> getOpenRequests(
-            @RequestParam(required = false) Long cursor,
+            @RequestParam(required = false) @Nullable Long cursor,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         if (!isGuide(authentication)) {
@@ -51,7 +61,7 @@ public class RequestController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HelpRequestResponse>> getRequest(
-            @PathVariable Long id,
+            @PathVariable @NonNull Long id,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         UserRole role = resolveUserRole(authentication);
@@ -61,7 +71,7 @@ public class RequestController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<HelpRequestPageResponse>> getMyRequests(
-            @RequestParam(required = false) Long cursor,
+            @RequestParam(required = false) @Nullable Long cursor,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();

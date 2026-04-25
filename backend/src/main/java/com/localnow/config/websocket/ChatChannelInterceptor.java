@@ -1,13 +1,9 @@
-package com.localnow.config;
+package com.localnow.config.websocket;
 
-import com.localnow.chat.domain.ChatRoom;
-import com.localnow.chat.repository.ChatRoomRepository;
-import com.localnow.match.repository.MatchOfferRepository;
-import com.localnow.request.domain.HelpRequest;
-import com.localnow.request.domain.HelpRequestStatus;
-import com.localnow.request.repository.HelpRequestRepository;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -20,11 +16,22 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.localnow.chat.domain.ChatRoom;
+import com.localnow.chat.repository.ChatRoomRepository;
+import com.localnow.config.security.JwtProvider;
+import com.localnow.match.repository.MatchOfferRepository;
+import com.localnow.request.domain.HelpRequest;
+import com.localnow.request.domain.HelpRequestStatus;
+import com.localnow.request.repository.HelpRequestRepository;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class ChatChannelInterceptor implements ChannelInterceptor {
 
     private static final Pattern ROOM_TOPIC_PATTERN = Pattern.compile("^/topic/rooms/(\\d+)$");
@@ -36,17 +43,6 @@ public class ChatChannelInterceptor implements ChannelInterceptor {
     private final ChatRoomRepository chatRoomRepository;
     private final HelpRequestRepository helpRequestRepository;
     private final MatchOfferRepository matchOfferRepository;
-
-    public ChatChannelInterceptor(
-            JwtProvider jwtProvider,
-            ChatRoomRepository chatRoomRepository,
-            HelpRequestRepository helpRequestRepository,
-            MatchOfferRepository matchOfferRepository) {
-        this.jwtProvider = jwtProvider;
-        this.chatRoomRepository = chatRoomRepository;
-        this.helpRequestRepository = helpRequestRepository;
-        this.matchOfferRepository = matchOfferRepository;
-    }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -60,7 +56,7 @@ public class ChatChannelInterceptor implements ChannelInterceptor {
             if (StringUtils.hasText(token)) {
                 try {
                     Claims claims = jwtProvider.validateToken(token);
-                    Long userId = Long.parseLong(claims.getSubject());
+                    Long userId = Long.valueOf(claims.getSubject());
                     String role = claims.get("role", String.class);
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
@@ -104,15 +100,17 @@ public class ChatChannelInterceptor implements ChannelInterceptor {
                                 if (request.getStatus() == HelpRequestStatus.OPEN) {
                                     // any authenticated guide can watch OPEN request notifications
                                 } else if (!matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
-                                    throw new MessageDeliveryException(message, "Not allowed to subscribe to this request topic");
+                                    throw new MessageDeliveryException(message,
+                                            "Not allowed to subscribe to this request topic");
                                 }
                             } else {
-                                throw new MessageDeliveryException(message, "Not allowed to subscribe to this request topic");
+                                throw new MessageDeliveryException(message,
+                                        "Not allowed to subscribe to this request topic");
                             }
                         } else {
                             Matcher roomTopic = ROOM_TOPIC_PATTERN.matcher(destination);
                             if (roomTopic.matches()) {
-                                Long roomId = Long.parseLong(roomTopic.group(1));
+                                Long roomId = Long.valueOf(roomTopic.group(1));
                                 ChatRoom room = chatRoomRepository.findById(roomId)
                                         .orElseThrow(() -> new MessageDeliveryException(message, "Room not found"));
                                 if (!room.isParticipant(userId)) {
@@ -132,6 +130,9 @@ public class ChatChannelInterceptor implements ChannelInterceptor {
 
     private String resolveToken(StompHeaderAccessor accessor) {
         String bearer = accessor.getFirstNativeHeader("Authorization");
+        if (bearer == null) {
+            return null;
+        }
         if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
             return bearer.substring(7);
         }

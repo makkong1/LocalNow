@@ -1,5 +1,16 @@
 package com.localnow.request.service;
 
+import java.util.List;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.common.ErrorCode;
 import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
@@ -10,34 +21,20 @@ import com.localnow.request.dto.HelpRequestResponse;
 import com.localnow.request.event.MatchDispatchEvent;
 import com.localnow.request.repository.HelpRequestRepository;
 import com.localnow.user.domain.UserRole;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class RequestService {
 
     private final HelpRequestRepository repository;
     private final ApplicationEventPublisher eventPublisher;
     private final MatchOfferRepository matchOfferRepository;
 
-    public RequestService(
-            HelpRequestRepository repository,
-            ApplicationEventPublisher eventPublisher,
-            MatchOfferRepository matchOfferRepository) {
-        this.repository = repository;
-        this.eventPublisher = eventPublisher;
-        this.matchOfferRepository = matchOfferRepository;
-    }
-
     @Transactional
-    public HelpRequestResponse createRequest(Long travelerId, CreateRequestRequest req) {
+    public HelpRequestResponse createRequest(@NonNull Long travelerId, @NonNull CreateRequestRequest req) {
         HelpRequest request = new HelpRequest();
         request.setTravelerId(travelerId);
         request.setRequestType(req.requestType());
@@ -54,39 +51,41 @@ public class RequestService {
         // AFTER_COMMIT으로 발행하여 롤백 시 유령 이벤트를 방지한다 (ADR-003)
         eventPublisher.publishEvent(new MatchDispatchEvent(
                 saved.getId(), saved.getRequestType().name(),
-                saved.getLat(), saved.getLng(), saved.getBudgetKrw()
-        ));
+                saved.getLat(), saved.getLng(), saved.getBudgetKrw()));
 
         return toResponse(saved);
     }
 
-    public HelpRequestResponse getRequest(Long requestId) {
+    public HelpRequestResponse getRequest(@NonNull Long requestId) {
         HelpRequest request = repository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Help request not found"));
         return toResponse(request);
     }
 
-    public HelpRequestResponse getRequestForUser(Long requestId, Long userId, UserRole role) {
+    public HelpRequestResponse getRequestForUser(
+            @NonNull Long requestId, @NonNull Long userId, @NonNull UserRole role) {
         HelpRequest request = repository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Help request not found"));
-        if (role == UserRole.TRAVELER) {
-            if (!userId.equals(request.getTravelerId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        switch (role) {
+            case TRAVELER -> {
+                if (!userId.equals(request.getTravelerId())) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                }
             }
-        } else if (role == UserRole.GUIDE) {
-            if (request.getStatus() == HelpRequestStatus.OPEN) {
-                return toResponse(request);
+            case GUIDE -> {
+                if (request.getStatus() == HelpRequestStatus.OPEN) {
+                    return toResponse(request);
+                }
+                if (!matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                }
             }
-            if (!matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
-            }
-        } else {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
         }
         return toResponse(request);
     }
 
-    public HelpRequestPageResponse getOpenRequests(Long cursor, int size) {
+    public HelpRequestPageResponse getOpenRequests(@Nullable Long cursor, int size) {
         PageRequest pageable = PageRequest.of(0, size + 1);
         List<HelpRequest> items = (cursor == null)
                 ? repository.findByStatusOrderByIdDesc(HelpRequestStatus.OPEN, pageable)
@@ -101,7 +100,8 @@ public class RequestService {
         return new HelpRequestPageResponse(items.stream().map(this::toResponse).toList(), nextCursor);
     }
 
-    public HelpRequestPageResponse getMyRequests(Long travelerId, Long cursor, int size) {
+    public HelpRequestPageResponse getMyRequests(
+            @NonNull Long travelerId, @Nullable Long cursor, int size) {
         PageRequest pageable = PageRequest.of(0, size + 1);
         List<HelpRequest> items = (cursor == null)
                 ? repository.findByTravelerIdOrderByIdDesc(travelerId, pageable)
@@ -121,7 +121,6 @@ public class RequestService {
                 r.getId(), r.getTravelerId(), r.getRequestType(),
                 r.getLat(), r.getLng(), r.getDescription(),
                 r.getStartAt(), r.getDurationMin(), r.getBudgetKrw(),
-                r.getStatus(), r.getCreatedAt()
-        );
+                r.getStatus(), r.getCreatedAt());
     }
 }

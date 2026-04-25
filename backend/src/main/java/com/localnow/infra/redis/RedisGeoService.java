@@ -9,6 +9,7 @@ import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.GeoOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,12 +26,12 @@ public class RedisGeoService {
         this.geoOps = redisTemplate.opsForGeo();
     }
 
-    public void addGuide(Long guideId, double lat, double lng) {
+    public void addGuide(@NonNull Long guideId, double lat, double lng) {
         // Redis GEO stores as (longitude, latitude)
         geoOps.add(GEO_KEY, new Point(lng, lat), String.valueOf(guideId));
     }
 
-    public void removeGuide(Long guideId) {
+    public void removeGuide(@NonNull Long guideId) {
         geoOps.remove(GEO_KEY, String.valueOf(guideId));
     }
 
@@ -42,7 +43,7 @@ public class RedisGeoService {
         }
         return results.getContent().stream()
                 .map(GeoResult::getContent)
-                .map(loc -> Long.parseLong(loc.getName()))
+                .map(loc -> Long.valueOf(loc.getName()))
                 .collect(Collectors.toList());
     }
 }
