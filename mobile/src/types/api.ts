@@ -1,6 +1,22 @@
 // API contract types — mirrors docs/API_CONVENTIONS.md 1:1.
 // Do NOT define API types anywhere else.
 
+export type ErrorCode =
+  | 'AUTH_UNAUTHENTICATED'
+  | 'AUTH_FORBIDDEN'
+  | 'VALIDATION_FAILED'
+  | 'REQUEST_NOT_FOUND'
+  | 'REQUEST_NOT_OPEN'
+  | 'MATCH_ALREADY_CONFIRMED'
+  | 'PAYMENT_INVALID_STATE'
+  | 'RATE_LIMITED'
+  | 'INTERNAL_ERROR';
+
+export interface FieldError {
+  field: string;
+  message: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T | null;
@@ -9,33 +25,52 @@ export interface ApiResponse<T> {
 }
 
 export interface ApiError {
-  code: string;
+  code: ErrorCode;
   message: string;
-  fields: Record<string, string[]> | null;
+  fields: FieldError[] | null;
 }
 
+export type UserRole = 'TRAVELER' | 'GUIDE';
+
 // Auth
-export interface LoginResponse {
+export interface AuthResponse {
   accessToken: string;
   userId: number;
   role: UserRole;
   name: string;
 }
 
-export interface UserProfile {
-  userId: number;
+/** @deprecated Use AuthResponse */
+export type LoginResponse = AuthResponse;
+
+export interface UserProfileResponse {
+  id: number;
   email: string;
   name: string;
   role: UserRole;
+  languages: string[];
   city: string;
-  averageRating: number | null;
+  avgRating: number;
+  ratingCount: number;
 }
 
-export type UserRole = 'TRAVELER' | 'GUIDE';
+/** @deprecated Use UserProfileResponse */
+export type UserProfile = UserProfileResponse;
+
+export interface SignupParams {
+  email: string;
+  password: string;
+  name: string;
+  role: UserRole;
+  languages?: string[];
+  city?: string;
+}
 
 // Help Request
 export type RequestType = 'GUIDE' | 'TRANSLATION' | 'FOOD' | 'EMERGENCY';
-export type RequestStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type HelpRequestStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+/** @deprecated Use HelpRequestStatus */
+export type RequestStatus = HelpRequestStatus;
 
 export interface HelpRequest {
   id: number;
@@ -47,7 +82,7 @@ export interface HelpRequest {
   startAt: string;
   durationMin: number;
   budgetKrw: number;
-  status: RequestStatus;
+  status: HelpRequestStatus;
   createdAt: string;
 }
 
@@ -62,7 +97,9 @@ export interface CreateRequestBody {
 }
 
 // Match Offer
-export type OfferStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED';
+export type MatchOfferStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED';
+/** @deprecated Use MatchOfferStatus */
+export type OfferStatus = MatchOfferStatus;
 
 export interface MatchOffer {
   id: number;
@@ -71,7 +108,7 @@ export interface MatchOffer {
   guideName: string;
   guideRating: number | null;
   message: string | null;
-  status: OfferStatus;
+  status: MatchOfferStatus;
   createdAt: string;
 }
 
@@ -96,7 +133,7 @@ export interface SendMessageBody {
 }
 
 // Payment
-export type PaymentStatus = 'AUTHORIZED' | 'CAPTURED' | 'REFUNDED';
+export type PaymentStatus = 'AUTHORIZED' | 'CAPTURED' | 'REFUNDED' | 'FAILED';
 
 export interface PaymentIntent {
   requestId: number;

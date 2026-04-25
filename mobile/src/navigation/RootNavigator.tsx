@@ -5,9 +5,9 @@ import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
 
 export default function RootNavigator() {
-  const { isAuthenticated } = useAuth();
+  const { isLoading, isLoggedIn } = useAuth();
 
-  if (isAuthenticated === null) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' }}>
         <ActivityIndicator color="#f59e0b" />
@@ -15,5 +15,5 @@ export default function RootNavigator() {
     );
   }
 
-  return isAuthenticated ? <AppNavigator /> : <AuthNavigator />;
+  return isLoggedIn ? <AppNavigator /> : <AuthNavigator />;
 }
