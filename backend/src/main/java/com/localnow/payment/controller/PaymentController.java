@@ -1,28 +1,35 @@
 package com.localnow.payment.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.localnow.common.ApiResponse;
 import com.localnow.payment.dto.CreatePaymentIntentRequest;
 import com.localnow.payment.dto.PaymentIntentResponse;
 import com.localnow.payment.service.PaymentService;
+import com.localnow.user.domain.UserRole;
+
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/payments")
+@RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    public PaymentController(PaymentService paymentService) {
-        this.paymentService = paymentService;
-    }
-
     @PostMapping("/intent")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> createIntent(
-            @Valid @RequestBody CreatePaymentIntentRequest request,
+            @Valid @RequestBody @NonNull CreatePaymentIntentRequest request,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         PaymentIntentResponse response = paymentService.createIntent(userId, request);
@@ -31,7 +38,7 @@ public class PaymentController {
 
     @PostMapping("/{requestId}/capture")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> capture(
-            @PathVariable Long requestId,
+            @PathVariable @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(paymentService.capture(requestId, userId)));
@@ -39,7 +46,7 @@ public class PaymentController {
 
     @PostMapping("/{requestId}/refund")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> refund(
-            @PathVariable Long requestId,
+            @PathVariable @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(paymentService.refund(requestId, userId)));
@@ -47,8 +54,30 @@ public class PaymentController {
 
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> get(
-            @PathVariable Long requestId,
+            @PathVariable @NonNull Long requestId,
             Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok(paymentService.getByRequestId(requestId)));
+        Long userId = (Long) authentication.getPrincipal();
+        UserRole role = resolveUserRole(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(paymentService.getByRequestId(requestId, userId, role)));
+    }
+
+    private boolean isTraveler(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TRAVELER"));
+    }
+
+    private boolean isGuide(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_GUIDE"));
+    }
+
+    private UserRole resolveUserRole(Authentication authentication) {
+        if (isTraveler(authentication)) {
+            return UserRole.TRAVELER;
+        }
+        if (isGuide(authentication)) {
+            return UserRole.GUIDE;
+        }
+        throw new IllegalStateException("Unsupported role in JWT");
     }
 }

@@ -1,5 +1,25 @@
 package com.localnow.match.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.chat.service.ChatService;
 import com.localnow.common.ErrorCode;
 import com.localnow.infra.rabbit.RabbitPublisher;
@@ -13,33 +33,20 @@ import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.repository.HelpRequestRepository;
 import com.localnow.user.domain.User;
+import com.localnow.user.domain.UserRole;
 import com.localnow.user.repository.UserRepository;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class MatchService {
 
     private static final DefaultRedisScript<Long> RELEASE_LOCK_SCRIPT = new DefaultRedisScript<>(
             "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
-            Long.class
-    );
+            Long.class);
 
     private final HelpRequestRepository helpRequestRepository;
     private final MatchOfferRepository matchOfferRepository;
@@ -49,25 +56,9 @@ public class MatchService {
     private final TransactionTemplate transactionTemplate;
     private final ChatService chatService;
 
-    public MatchService(
-            HelpRequestRepository helpRequestRepository,
-            MatchOfferRepository matchOfferRepository,
-            UserRepository userRepository,
-            RedisTemplate<String, String> redisTemplate,
-            RabbitPublisher rabbitPublisher,
-            PlatformTransactionManager transactionManager,
-            ChatService chatService) {
-        this.helpRequestRepository = helpRequestRepository;
-        this.matchOfferRepository = matchOfferRepository;
-        this.userRepository = userRepository;
-        this.redisTemplate = redisTemplate;
-        this.rabbitPublisher = rabbitPublisher;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.chatService = chatService;
-    }
-
-    @Transactional
-    public MatchOfferResponse accept(Long requestId, Long guideId, AcceptRequest req) {
+    @Transactional(readOnly = true)
+    public MatchOfferResponse accept(
+            @NonNull Long requestId, @NonNull Long guideId, @Nullable AcceptRequest req) {
         HelpRequest request = helpRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
 
@@ -97,7 +88,8 @@ public class MatchService {
                 });
     }
 
-    public MatchOfferResponse confirm(Long requestId, Long travelerId, ConfirmRequest req) {
+    public MatchOfferResponse confirm(
+            @NonNull Long requestId, @NonNull Long travelerId, @NonNull ConfirmRequest req) {
         String lockKey = "lock:request:" + requestId;
         String lockValue = UUID.randomUUID().toString();
 
@@ -117,9 +109,31 @@ public class MatchService {
     }
 
     @Transactional(readOnly = true)
-    public List<MatchOfferResponse> getOffers(Long requestId) {
+    public List<MatchOfferResponse> getOffers(
+            @NonNull Long requestId, @NonNull Long userId, @NonNull UserRole role) {
+        HelpRequest request = helpRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+
+        switch (role) {
+            case TRAVELER -> {
+                if (!userId.equals(request.getTravelerId())) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                }
+            }
+            case GUIDE -> {
+                if (request.getStatus() != HelpRequestStatus.OPEN
+                        && !matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                }
+            }
+            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+
         List<MatchOffer> offers = matchOfferRepository.findByRequestId(requestId);
-        List<Long> guideIds = offers.stream().map(MatchOffer::getGuideId).toList();
+        List<Long> guideIds = offers.stream()
+                .map(MatchOffer::getGuideId)
+                .filter(Objects::nonNull)
+                .toList();
         Map<Long, User> guideMap = userRepository.findAllById(guideIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
         return offers.stream()
@@ -127,7 +141,8 @@ public class MatchService {
                 .toList();
     }
 
-    private MatchOfferResponse doConfirm(Long requestId, Long travelerId, ConfirmRequest req) {
+    private MatchOfferResponse doConfirm(
+            @NonNull Long requestId, @NonNull Long travelerId, @NonNull ConfirmRequest req) {
         HelpRequest request = helpRequestRepository.findByIdWithLock(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
 
@@ -141,7 +156,7 @@ public class MatchService {
                     ErrorCode.MATCH_ALREADY_CONFIRMED.getDefaultMessage());
         }
 
-        Long guideId = req.guideId();
+        Long guideId = Objects.requireNonNull(req.guideId(), "guideId");
         MatchOffer targetOffer = matchOfferRepository.findByRequestIdAndGuideId(requestId, guideId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found"));
 

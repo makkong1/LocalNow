@@ -1,36 +1,37 @@
 package com.localnow.user.service;
 
-import com.localnow.config.JwtProvider;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.localnow.config.security.JwtProvider;
 import com.localnow.user.domain.User;
 import com.localnow.user.dto.AuthResponse;
 import com.localnow.user.dto.LoginRequest;
 import com.localnow.user.dto.SignupRequest;
 import com.localnow.user.dto.UserProfileResponse;
 import com.localnow.user.repository.UserRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
-
-    public UserService(UserRepository userRepository, JwtProvider jwtProvider, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.jwtProvider = jwtProvider;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Transactional
     public AuthResponse register(SignupRequest request) {
@@ -44,7 +45,8 @@ public class UserService {
         user.setName(request.name());
         user.setRole(request.role());
         user.setLanguages(request.languages() != null && !request.languages().isEmpty()
-                ? String.join(",", request.languages()) : null);
+                ? String.join(",", request.languages())
+                : null);
         user.setCity(request.city());
         user.setAvgRating(BigDecimal.ZERO);
         user.setRatingCount(0);
@@ -59,6 +61,10 @@ public class UserService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
+        if (user.getPassword() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "This account uses social login (e.g. Google)");
+        }
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
@@ -67,7 +73,7 @@ public class UserService {
         return new AuthResponse(token, user.getId(), user.getRole().name(), user.getName());
     }
 
-    public UserProfileResponse getProfile(Long userId) {
+    public UserProfileResponse getProfile(@NonNull Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -83,7 +89,6 @@ public class UserService {
                 languages,
                 user.getCity(),
                 user.getAvgRating(),
-                user.getRatingCount()
-        );
+                user.getRatingCount());
     }
 }

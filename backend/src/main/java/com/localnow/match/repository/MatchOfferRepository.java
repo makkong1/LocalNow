@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface MatchOfferRepository extends JpaRepository<MatchOffer, Long> {
     List<MatchOffer> findByRequestId(Long requestId);
     Optional<MatchOffer> findByRequestIdAndGuideId(Long requestId, Long guideId);
+    boolean existsByRequestIdAndGuideId(Long requestId, Long guideId);
     int countByRequestIdAndStatus(Long requestId, MatchOfferStatus status);
 }

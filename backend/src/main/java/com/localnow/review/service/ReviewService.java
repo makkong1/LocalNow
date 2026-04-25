@@ -1,6 +1,18 @@
 package com.localnow.review.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Objects;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.common.ErrorCode;
+import com.localnow.match.domain.MatchOffer;
 import com.localnow.match.domain.MatchOfferStatus;
 import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
@@ -12,34 +24,19 @@ import com.localnow.review.dto.ReviewPageResponse;
 import com.localnow.review.dto.ReviewResponse;
 import com.localnow.review.repository.ReviewRepository;
 import com.localnow.user.repository.UserRepository;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final HelpRequestRepository helpRequestRepository;
     private final MatchOfferRepository matchOfferRepository;
     private final UserRepository userRepository;
-
-    public ReviewService(
-            ReviewRepository reviewRepository,
-            HelpRequestRepository helpRequestRepository,
-            MatchOfferRepository matchOfferRepository,
-            UserRepository userRepository) {
-        this.reviewRepository = reviewRepository;
-        this.helpRequestRepository = helpRequestRepository;
-        this.matchOfferRepository = matchOfferRepository;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public ReviewResponse createReview(Long reviewerId, Long requestId, CreateReviewRequest req) {
@@ -98,14 +95,16 @@ public class ReviewService {
     private Long findConfirmedGuideId(Long requestId) {
         return matchOfferRepository.findByRequestId(requestId).stream()
                 .filter(o -> o.getStatus() == MatchOfferStatus.CONFIRMED)
-                .map(o -> o.getGuideId())
+                .map(MatchOffer::getGuideId)
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Confirmed guide not found for request"));
     }
 
     private void updateGuideRating(Long guideId, int newRating) {
-        if (guideId == null) return;
+        if (guideId == null)
+            return;
         userRepository.findById(guideId).ifPresent(guide -> {
             int oldCount = guide.getRatingCount();
             int newCount = oldCount + 1;

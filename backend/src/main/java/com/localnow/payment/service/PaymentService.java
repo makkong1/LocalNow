@@ -1,5 +1,11 @@
 package com.localnow.payment.service;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.common.ErrorCode;
 import com.localnow.infra.pg.PaymentGateway;
 import com.localnow.match.domain.MatchOffer;
@@ -14,12 +20,14 @@ import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.domain.RequestType;
 import com.localnow.request.repository.HelpRequestRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import com.localnow.user.domain.UserRole;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
     private static final long FEE_RATE_EMERGENCY_NUM = 25;
@@ -31,19 +39,9 @@ public class PaymentService {
     private final MatchOfferRepository matchOfferRepository;
     private final PaymentGateway paymentGateway;
 
-    public PaymentService(
-            PaymentIntentRepository paymentIntentRepository,
-            HelpRequestRepository helpRequestRepository,
-            MatchOfferRepository matchOfferRepository,
-            PaymentGateway paymentGateway) {
-        this.paymentIntentRepository = paymentIntentRepository;
-        this.helpRequestRepository = helpRequestRepository;
-        this.matchOfferRepository = matchOfferRepository;
-        this.paymentGateway = paymentGateway;
-    }
-
     @Transactional
-    public PaymentIntentResponse createIntent(Long travelerId, CreatePaymentIntentRequest req) {
+    public PaymentIntentResponse createIntent(
+            @NonNull Long travelerId, @NonNull CreatePaymentIntentRequest req) {
         Long requestId = req.requestId();
         HelpRequest request = helpRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
@@ -71,7 +69,8 @@ public class PaymentService {
 
                     long amountKrw = request.getBudgetKrw();
                     long feeRate = request.getRequestType() == RequestType.EMERGENCY
-                            ? FEE_RATE_EMERGENCY_NUM : FEE_RATE_STANDARD_NUM;
+                            ? FEE_RATE_EMERGENCY_NUM
+                            : FEE_RATE_STANDARD_NUM;
                     long platformFeeKrw = (amountKrw * feeRate + FEE_RATE_DENOM / 2) / FEE_RATE_DENOM;
                     long guidePayout = amountKrw - platformFeeKrw;
 
@@ -97,7 +96,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentIntentResponse capture(Long requestId, Long travelerId) {
+    public PaymentIntentResponse capture(@NonNull Long requestId, @NonNull Long travelerId) {
         PaymentIntent intent = paymentIntentRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Payment intent not found"));
@@ -130,7 +129,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentIntentResponse refund(Long requestId, Long travelerId) {
+    public PaymentIntentResponse refund(@NonNull Long requestId, @NonNull Long travelerId) {
         PaymentIntent intent = paymentIntentRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Payment intent not found"));
@@ -155,11 +154,29 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public PaymentIntentResponse getByRequestId(Long requestId) {
-        return paymentIntentRepository.findByRequestId(requestId)
-                .map(this::toResponse)
+    public PaymentIntentResponse getByRequestId(
+            @NonNull Long requestId, @NonNull Long userId, @NonNull UserRole role) {
+        PaymentIntent intent = paymentIntentRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Payment intent not found"));
+
+        boolean payer = userId.equals(intent.getPayerId());
+        boolean payee = userId.equals(intent.getPayeeId());
+        switch (role) {
+            case TRAVELER -> {
+                if (!payer) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                }
+            }
+            case GUIDE -> {
+                if (!payee) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                }
+            }
+            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+
+        return toResponse(intent);
     }
 
     private PaymentIntentResponse toResponse(PaymentIntent intent) {

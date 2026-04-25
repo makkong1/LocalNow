@@ -28,6 +28,14 @@ jwt:
 server:
   port: 8081
 
+# 콘솔 로그에 MDC: 요청ID·서비스 operation (JPA SQL 등 동일 스레드 로그와 상관)
+logging:
+  level:
+  org.hibernate.SQL: TRACE
+  org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{ISO8601} %5p [%X{requestId:-}][%X{operation:-}] %logger{36} - %m%n"
+
 management:
   endpoints:
     web:

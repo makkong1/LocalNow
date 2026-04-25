@@ -1,5 +1,18 @@
 package com.localnow.chat.service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.chat.domain.ChatMessage;
 import com.localnow.chat.domain.ChatRoom;
 import com.localnow.chat.dto.ChatMessageRequest;
@@ -9,18 +22,14 @@ import com.localnow.chat.repository.ChatMessageRepository;
 import com.localnow.chat.repository.ChatRoomRepository;
 import com.localnow.common.ErrorCode;
 import com.localnow.infra.rabbit.RabbitPublisher;
-import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+@Slf4j
 public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -28,19 +37,9 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final RabbitPublisher rabbitPublisher;
 
-    public ChatService(
-            ChatRoomRepository chatRoomRepository,
-            ChatMessageRepository chatMessageRepository,
-            SimpMessagingTemplate messagingTemplate,
-            RabbitPublisher rabbitPublisher) {
-        this.chatRoomRepository = chatRoomRepository;
-        this.chatMessageRepository = chatMessageRepository;
-        this.messagingTemplate = messagingTemplate;
-        this.rabbitPublisher = rabbitPublisher;
-    }
-
     @Transactional
-    public ChatRoomResponse createRoom(Long requestId, Long travelerId, Long guideId) {
+    public ChatRoomResponse createRoom(
+            @NonNull Long requestId, @NonNull Long travelerId, @NonNull Long guideId) {
         return chatRoomRepository.findByRequestId(requestId)
                 .map(this::toRoomResponse)
                 .orElseGet(() -> {
@@ -53,7 +52,8 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageResponse sendMessage(Long roomId, Long senderId, ChatMessageRequest req) {
+    public ChatMessageResponse sendMessage(
+            @NonNull Long roomId, @NonNull Long senderId, @NonNull ChatMessageRequest req) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
@@ -77,17 +77,19 @@ public class ChatService {
                     messagingTemplate.convertAndSend("/topic/rooms/" + roomId, response);
 
                     Long receiverId = senderId.equals(room.getTravelerId())
-                            ? room.getGuideId() : room.getTravelerId();
+                            ? room.getGuideId()
+                            : room.getTravelerId();
+                    Long receiver = Objects.requireNonNull(receiverId, "receiver for notification");
                     publishAfterCommit("chat.message.sent",
                             Map.of("roomId", roomId, "senderId", senderId,
-                                    "receiverId", receiverId, "content", req.content()));
+                                    "receiverId", receiver, "content", req.content()));
 
                     return response;
                 });
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> getHistory(Long roomId, Long requesterId) {
+    public List<ChatMessageResponse> getHistory(@NonNull Long roomId, @NonNull Long requesterId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
@@ -102,7 +104,7 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public ChatRoomResponse getRoom(Long requestId, Long requesterId) {
+    public ChatRoomResponse getRoom(@NonNull Long requestId, @NonNull Long requesterId) {
         ChatRoom room = chatRoomRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 

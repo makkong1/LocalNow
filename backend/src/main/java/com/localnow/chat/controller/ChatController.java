@@ -1,27 +1,32 @@
 package com.localnow.chat.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.localnow.chat.dto.ChatMessageResponse;
 import com.localnow.chat.dto.ChatRoomResponse;
 import com.localnow.chat.service.ChatService;
 import com.localnow.common.ApiResponse;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
+@RequiredArgsConstructor
+@Slf4j
 public class ChatController {
 
     private final ChatService chatService;
 
-    public ChatController(ChatService chatService) {
-        this.chatService = chatService;
-    }
-
     @GetMapping("/requests/{requestId}/room")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> getRoom(
-            @PathVariable Long requestId,
+            @PathVariable @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(chatService.getRoom(requestId, userId)));
@@ -29,7 +34,7 @@ public class ChatController {
 
     @GetMapping("/rooms/{roomId}/messages")
     public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getHistory(
-            @PathVariable Long roomId,
+            @PathVariable @NonNull Long roomId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(chatService.getHistory(roomId, userId)));

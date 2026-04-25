@@ -19,6 +19,8 @@ public interface HelpRequestRepository extends JpaRepository<HelpRequest, Long> 
     Page<HelpRequest> findByStatusOrderByCreatedAtDesc(HelpRequestStatus status, Pageable pageable);
     List<HelpRequest> findByTravelerIdOrderByIdDesc(Long travelerId, Pageable pageable);
     List<HelpRequest> findByTravelerIdAndIdLessThanOrderByIdDesc(Long travelerId, Long cursor, Pageable pageable);
+    List<HelpRequest> findByStatusOrderByIdDesc(HelpRequestStatus status, Pageable pageable);
+    List<HelpRequest> findByStatusAndIdLessThanOrderByIdDesc(HelpRequestStatus status, Long cursor, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM HelpRequest r WHERE r.id = :id")
