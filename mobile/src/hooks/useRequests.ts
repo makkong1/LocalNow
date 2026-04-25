@@ -13,7 +13,7 @@ export function useMyRequests() {
   });
 }
 
-export function useOpenRequests() {
+export function useOpenRequests(options?: { enabled?: boolean; refetchInterval?: number | false }) {
   return useQuery({
     queryKey: ['requests', 'open'],
     queryFn: async () => {
@@ -21,6 +21,8 @@ export function useOpenRequests() {
       if (!res.success || res.data == null) throw res.error;
       return res.data;
     },
+    enabled: options?.enabled,
+    refetchInterval: options?.refetchInterval,
   });
 }
 
