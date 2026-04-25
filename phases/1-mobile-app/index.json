@@ -23,7 +23,7 @@
       "name": "backend-mobile-support-and-api-layer",
       "status": "completed",
       "started_at": "2026-04-25T14:43:03+0900",
-      "completed_at": "2026-04-25T15:30:00+0900",
+      "completed_at": "2026-04-25T14:51:25+0900",
       "summary": "SecurityConfig CORS bean 추가(/ws-native 이미 존재), types/api.ts 전 도메인 *Response 타입 정비(backend DTO 1:1 대응), query-client.ts 추출, 도메인 훅 6개 생성(useRequests/useMatches/useChat/usePayment/useReview/useGuide), api-client.test.ts 추가. mobile: 11 tests passed, lint clean. backend: 컴파일 성공, 6개 pre-existing 테스트 실패(Docker/Spring 컨텍스트 이슈, 변경 전후 동일)."
     },
     {
