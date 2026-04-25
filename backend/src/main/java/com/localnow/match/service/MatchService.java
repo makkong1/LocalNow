@@ -13,6 +13,7 @@ import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.repository.HelpRequestRepository;
 import com.localnow.user.domain.User;
+import com.localnow.user.domain.UserRole;
 import com.localnow.user.repository.UserRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -117,7 +118,24 @@ public class MatchService {
     }
 
     @Transactional(readOnly = true)
-    public List<MatchOfferResponse> getOffers(Long requestId) {
+    public List<MatchOfferResponse> getOffers(Long requestId, Long userId, UserRole role) {
+        HelpRequest request = helpRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+
+        if (role == UserRole.TRAVELER) {
+            if (!userId.equals(request.getTravelerId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            }
+        } else if (role == UserRole.GUIDE) {
+            if (request.getStatus() == HelpRequestStatus.OPEN) {
+                // Guide may inspect offers before sending their own; allowed for OPEN.
+            } else if (!matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+
         List<MatchOffer> offers = matchOfferRepository.findByRequestId(requestId);
         List<Long> guideIds = offers.stream().map(MatchOffer::getGuideId).toList();
         Map<Long, User> guideMap = userRepository.findAllById(guideIds).stream()

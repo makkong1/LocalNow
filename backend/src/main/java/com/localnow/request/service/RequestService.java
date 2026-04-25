@@ -1,5 +1,7 @@
 package com.localnow.request.service;
 
+import com.localnow.common.ErrorCode;
+import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.dto.CreateRequestRequest;
@@ -7,6 +9,7 @@ import com.localnow.request.dto.HelpRequestPageResponse;
 import com.localnow.request.dto.HelpRequestResponse;
 import com.localnow.request.event.MatchDispatchEvent;
 import com.localnow.request.repository.HelpRequestRepository;
+import com.localnow.user.domain.UserRole;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -22,10 +25,15 @@ public class RequestService {
 
     private final HelpRequestRepository repository;
     private final ApplicationEventPublisher eventPublisher;
+    private final MatchOfferRepository matchOfferRepository;
 
-    public RequestService(HelpRequestRepository repository, ApplicationEventPublisher eventPublisher) {
+    public RequestService(
+            HelpRequestRepository repository,
+            ApplicationEventPublisher eventPublisher,
+            MatchOfferRepository matchOfferRepository) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
+        this.matchOfferRepository = matchOfferRepository;
     }
 
     @Transactional
@@ -56,6 +64,41 @@ public class RequestService {
         HelpRequest request = repository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Help request not found"));
         return toResponse(request);
+    }
+
+    public HelpRequestResponse getRequestForUser(Long requestId, Long userId, UserRole role) {
+        HelpRequest request = repository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Help request not found"));
+        if (role == UserRole.TRAVELER) {
+            if (!userId.equals(request.getTravelerId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            }
+        } else if (role == UserRole.GUIDE) {
+            if (request.getStatus() == HelpRequestStatus.OPEN) {
+                return toResponse(request);
+            }
+            if (!matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+        return toResponse(request);
+    }
+
+    public HelpRequestPageResponse getOpenRequests(Long cursor, int size) {
+        PageRequest pageable = PageRequest.of(0, size + 1);
+        List<HelpRequest> items = (cursor == null)
+                ? repository.findByStatusOrderByIdDesc(HelpRequestStatus.OPEN, pageable)
+                : repository.findByStatusAndIdLessThanOrderByIdDesc(HelpRequestStatus.OPEN, cursor, pageable);
+
+        Long nextCursor = null;
+        if (items.size() > size) {
+            nextCursor = items.get(size - 1).getId();
+            items = items.subList(0, size);
+        }
+
+        return new HelpRequestPageResponse(items.stream().map(this::toResponse).toList(), nextCursor);
     }
 
     public HelpRequestPageResponse getMyRequests(Long travelerId, Long cursor, int size) {

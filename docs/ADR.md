@@ -58,3 +58,22 @@ MVP 속도 최우선. 외부 의존성은 "정말 매칭/채팅/결제가 동작
 **결정**: Zustand / Redux / Jotai 같은 전역 상태 라이브러리를 MVP 에 도입하지 않는다. 서버 상태는 TanStack Query, 클라이언트 상태는 `useState/useReducer` 만 사용한다.
 **이유**: 화면이 `/traveler`, `/guide`, 채팅 패널 수준으로 작다. 전역 상태는 대부분 "서버 상태를 전역으로 캐싱" 이라는 중복이며, TanStack Query 가 이미 커버한다.
 **트레이드오프**: 페이지 간 상태 공유가 많아지면 prop drilling 이 귀찮아질 수 있다. 실제 그 수준이 되면 Zustand 도입을 별도 ADR 로 결정한다.
+
+### ADR-011: 모바일 클라이언트는 React Native (Expo) 로 구현한다
+**결정**: 데모 웹(Next.js)을 대체하는 실제 모바일 앱을 React Native 0.76 (New Architecture) + Expo SDK 52 로 구현한다. iOS / Android 동시 지원.
+**이유**:
+1. 기존 웹 스택(React, TypeScript, TanStack Query, @stomp/stompjs)을 그대로 재사용할 수 있어 학습 곡선과 구현 공수가 가장 낮다.
+2. Expo SDK 52는 New Architecture(Bridgeless) 가 안정화되어 성능 문제가 없다.
+3. `expo-secure-store`로 JWT를 기기 보안 저장소에 저장할 수 있어 ADR-009의 보안 원칙을 모바일에서도 동등하게 구현할 수 있다.
+4. Flutter/Swift/Kotlin 대비 코드베이스 단일화(JS/TS)로 유지보수가 쉽다.
+**트레이드오프**: 네이티브 코드(Objective-C/Swift/Kotlin)에 직접 접근이 필요한 고급 기능(Camera, BLE 등)은 별도 네이티브 모듈이 필요하다. MVP 범위에서는 해당 없음.
+
+### ADR-012: 모바일 앱은 백엔드를 직접 호출한다 (BFF 없음)
+**결정**: 모바일 앱은 `EXPO_PUBLIC_API_BASE_URL` 로 백엔드를 직접 호출한다. 웹의 Next.js BFF(Route Handler) 패턴을 모바일에서는 적용하지 않는다.
+**이유**: 모바일 앱에는 "서버 컴포넌트"나 "HttpOnly 쿠키" 개념이 없다. `expo-secure-store`는 OS 레벨 보안 스토리지로, HttpOnly 쿠키와 동등한 보안 수준을 제공한다. BFF를 위해 별도 서버를 두면 인프라 복잡도만 늘어난다.
+**트레이드오프**: 백엔드에 CORS 설정이 필요하다. 단, 모바일 앱은 실제로 CORS 제약을 받지 않으므로 CORS 설정은 향후 웹 확장을 위한 준비다. JWT가 네트워크 레이어에 직접 노출되므로 HTTPS(TLS) 강제가 필수다.
+
+### ADR-013: 모바일 WebSocket은 Native WebSocket으로 연결한다 (SockJS 불필요)
+**결정**: STOMP over WebSocket 연결 시 SockJS 폴백을 사용하지 않는다. `@stomp/stompjs` 의 Native WebSocket 모드(`webSocketFactory: () => new WebSocket(url)`)로 백엔드에 직접 연결한다.
+**이유**: SockJS는 브라우저 환경에서 WebSocket을 지원하지 않는 구형 브라우저를 위한 폴백이다. React Native는 표준 WebSocket API를 내장 지원하므로 SockJS가 불필요하다.
+**트레이드오프**: 백엔드 WebSocketConfig에서 SockJS 엔드포인트(`/ws`)와 순수 WebSocket 엔드포인트를 함께 등록해야 한다. 현재 `allowedOrigins("*")`를 사용 중이므로 모바일 연결에 추가 설정 불필요.

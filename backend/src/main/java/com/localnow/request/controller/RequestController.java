@@ -6,6 +6,7 @@ import com.localnow.request.dto.CreateRequestRequest;
 import com.localnow.request.dto.HelpRequestPageResponse;
 import com.localnow.request.dto.HelpRequestResponse;
 import com.localnow.request.service.RequestService;
+import com.localnow.user.domain.UserRole;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,11 +36,26 @@ public class RequestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
+    @GetMapping("/open")
+    public ResponseEntity<ApiResponse<HelpRequestPageResponse>> getOpenRequests(
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        if (!isGuide(authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.fail(ErrorCode.AUTH_FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage()));
+        }
+        HelpRequestPageResponse response = requestService.getOpenRequests(cursor, size);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HelpRequestResponse>> getRequest(
             @PathVariable Long id,
             Authentication authentication) {
-        HelpRequestResponse response = requestService.getRequest(id);
+        Long userId = (Long) authentication.getPrincipal();
+        UserRole role = resolveUserRole(authentication);
+        HelpRequestResponse response = requestService.getRequestForUser(id, userId, role);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -56,5 +72,20 @@ public class RequestController {
     private boolean isTraveler(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_TRAVELER"));
+    }
+
+    private boolean isGuide(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_GUIDE"));
+    }
+
+    private UserRole resolveUserRole(Authentication authentication) {
+        if (isTraveler(authentication)) {
+            return UserRole.TRAVELER;
+        }
+        if (isGuide(authentication)) {
+            return UserRole.GUIDE;
+        }
+        throw new IllegalStateException("Unsupported role in JWT");
     }
 }

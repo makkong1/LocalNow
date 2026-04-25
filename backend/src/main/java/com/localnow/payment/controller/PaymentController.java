@@ -4,6 +4,7 @@ import com.localnow.common.ApiResponse;
 import com.localnow.payment.dto.CreatePaymentIntentRequest;
 import com.localnow.payment.dto.PaymentIntentResponse;
 import com.localnow.payment.service.PaymentService;
+import com.localnow.user.domain.UserRole;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,28 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> get(
             @PathVariable Long requestId,
             Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok(paymentService.getByRequestId(requestId)));
+        Long userId = (Long) authentication.getPrincipal();
+        UserRole role = resolveUserRole(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(paymentService.getByRequestId(requestId, userId, role)));
+    }
+
+    private boolean isTraveler(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TRAVELER"));
+    }
+
+    private boolean isGuide(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_GUIDE"));
+    }
+
+    private UserRole resolveUserRole(Authentication authentication) {
+        if (isTraveler(authentication)) {
+            return UserRole.TRAVELER;
+        }
+        if (isGuide(authentication)) {
+            return UserRole.GUIDE;
+        }
+        throw new IllegalStateException("Unsupported role in JWT");
     }
 }

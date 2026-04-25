@@ -14,6 +14,7 @@ import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.domain.RequestType;
 import com.localnow.request.repository.HelpRequestRepository;
+import com.localnow.user.domain.UserRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -155,11 +156,26 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public PaymentIntentResponse getByRequestId(Long requestId) {
-        return paymentIntentRepository.findByRequestId(requestId)
-                .map(this::toResponse)
+    public PaymentIntentResponse getByRequestId(Long requestId, Long userId, UserRole role) {
+        PaymentIntent intent = paymentIntentRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Payment intent not found"));
+
+        boolean payer = userId.equals(intent.getPayerId());
+        boolean payee = userId.equals(intent.getPayeeId());
+        if (role == UserRole.TRAVELER) {
+            if (!payer) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            }
+        } else if (role == UserRole.GUIDE) {
+            if (!payee) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+
+        return toResponse(intent);
     }
 
     private PaymentIntentResponse toResponse(PaymentIntent intent) {

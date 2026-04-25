@@ -3,6 +3,10 @@
     {
       "dir": "0-mvp",
       "status": "completed"
+    },
+    {
+      "dir": "1-mobile-app",
+      "status": "pending"
     }
   ]
 }

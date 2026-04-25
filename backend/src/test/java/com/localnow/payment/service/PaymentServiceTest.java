@@ -14,6 +14,7 @@ import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.domain.RequestType;
 import com.localnow.request.repository.HelpRequestRepository;
+import com.localnow.user.domain.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -98,6 +99,37 @@ class PaymentServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void getByRequestId_succeeds_for_payer() {
+        PaymentIntent intent = buildIntent(1L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.AUTHORIZED);
+        when(paymentIntentRepository.findByRequestId(1L)).thenReturn(Optional.of(intent));
+
+        PaymentIntentResponse res = paymentService.getByRequestId(1L, 10L, UserRole.TRAVELER);
+
+        assertThat(res.amountKrw()).isEqualTo(10000L);
+    }
+
+    @Test
+    void getByRequestId_succeeds_for_payee_guide() {
+        PaymentIntent intent = buildIntent(1L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.AUTHORIZED);
+        when(paymentIntentRepository.findByRequestId(1L)).thenReturn(Optional.of(intent));
+
+        PaymentIntentResponse res = paymentService.getByRequestId(1L, 20L, UserRole.GUIDE);
+
+        assertThat(res.guidePayout()).isEqualTo(8500L);
+    }
+
+    @Test
+    void getByRequestId_forbidden_for_unrelated_user() {
+        PaymentIntent intent = buildIntent(1L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.AUTHORIZED);
+        when(paymentIntentRepository.findByRequestId(1L)).thenReturn(Optional.of(intent));
+
+        assertThatThrownBy(() -> paymentService.getByRequestId(1L, 99L, UserRole.TRAVELER))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     private HelpRequest buildRequest(Long id, Long travelerId, HelpRequestStatus status,

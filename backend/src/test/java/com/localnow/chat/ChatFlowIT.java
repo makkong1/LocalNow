@@ -130,6 +130,51 @@ class ChatFlowIT {
         client.stop();
     }
 
+    @Test
+    void stomp_connects_over_native_websocket_endpoint() throws Exception {
+        User traveler = createUser("t2@test.com", "Traveler2", UserRole.TRAVELER);
+        User guide = createUser("g2@test.com", "Guide2", UserRole.GUIDE);
+        HelpRequest request = createRequest(traveler.getId());
+
+        ChatRoom room = new ChatRoom();
+        room.setRequestId(request.getId());
+        room.setTravelerId(traveler.getId());
+        room.setGuideId(guide.getId());
+        room = chatRoomRepository.save(room);
+        Long roomId = room.getId();
+
+        BlockingQueue<ChatMessageResponse> received = new LinkedBlockingQueue<>();
+
+        WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient());
+        client.setMessageConverter(new MappingJackson2MessageConverter());
+
+        String url = "ws://localhost:" + port + "/ws-native";
+        StompSession session = client.connectAsync(url, new WebSocketHttpHeaders(),
+                new StompSessionHandlerAdapter() {}).get(5, TimeUnit.SECONDS);
+
+        session.subscribe("/topic/rooms/" + roomId,
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) { return ChatMessageResponse.class; }
+
+                    @Override
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        received.add((ChatMessageResponse) payload);
+                    }
+                });
+
+        String clientMessageId = UUID.randomUUID().toString();
+        session.send("/app/rooms/" + roomId + "/messages",
+                new ChatMessageRequest("Hello native WS", clientMessageId));
+
+        ChatMessageResponse msg = received.poll(5, TimeUnit.SECONDS);
+        assertThat(msg).isNotNull();
+        assertThat(msg.content()).isEqualTo("Hello native WS");
+
+        session.disconnect();
+        client.stop();
+    }
+
     private User createUser(String email, String name, UserRole role) {
         User user = new User();
         user.setEmail(email);

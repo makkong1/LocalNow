@@ -1,6 +1,6 @@
 # API 규약 가이드
 
-LocalNow 서버의 외부 계약 문서. 소비자는 (1) Next.js 데모 웹(`web/src/app/api/**` Route Handler 를 통해) 과 (2) 향후 모바일 앱이다. 웹의 `web/src/types/api.ts` 는 이 문서와 1:1 로 대응한다.
+LocalNow 백엔드의 단일 공식 외부 계약 문서. 소비자는 (1) Next.js 데모 웹(`web/src/app/api/**` Route Handler 를 통해) 과 (2) 모바일 앱(`mobile/src/lib/api-client.ts` 로 직접 호출)이다. 웹의 `web/src/types/api.ts` 와 모바일의 `mobile/src/types/api.ts` 는 이 문서와 1:1 로 대응한다.
 
 ## 설계 원칙
 1. **일관된 응답 봉투** — 모든 응답은 공통 타입 `ApiResponse<T>` 로 감싸서 내려준다. 성공/실패 모두 동일한 구조를 유지한다.
@@ -9,6 +9,17 @@ LocalNow 서버의 외부 계약 문서. 소비자는 (1) Next.js 데모 웹(`we
 4. **페이징은 Cursor 기반** — offset 페이징은 금지한다. 응답에 `nextCursor` 를 넣고, null 이면 마지막 페이지.
 5. **시간은 항상 UTC ISO-8601** — `2026-04-22T12:00:00Z`. 타임존은 클라이언트가 변환한다.
 6. **돈은 정수 최소 통화 단위** — 원화는 KRW 단위 정수, USD 는 cents 정수. Double 금지.
+7. **웹/모바일 API 계약은 하나** — 백엔드 HTTP API 는 클라이언트별로 나누지 않는다. 웹 Route Handler 는 인증 쿠키를 백엔드 Bearer token 호출로 바꾸는 얇은 BFF/proxy 이고, 모바일은 같은 백엔드 API 를 직접 호출한다.
+8. **클라이언트 차이는 transport 와 token storage 에만 둔다** — 웹은 HttpOnly cookie + BFF, 모바일은 SecureStore + direct Bearer 호출을 쓴다. HTTP resource, DTO, error code 는 동일해야 한다.
+
+## 클라이언트별 호출 경로
+
+| 클라이언트 | HTTP 호출 경로 | 토큰 보관 | 백엔드 계약 |
+|------------|----------------|-----------|-------------|
+| Web | Browser → `web/src/app/api/**` → Backend | HttpOnly cookie | 이 문서의 endpoint 를 Route Handler 가 proxy |
+| Mobile | App → Backend | `expo-secure-store` | 이 문서의 endpoint 를 직접 호출 |
+
+웹의 `/api/**` 경로는 백엔드 API 를 새로 정의하지 않는다. 예를 들어 웹 `GET /api/requests` 가 내부적으로 백엔드 `GET /requests/me` 를 호출한다면, 공식 계약은 `GET /requests/me` 이다. 웹과 모바일 중 한쪽에서 필요한 데이터가 있으면 BFF 안에서 임시로 우회하지 말고 백엔드 공식 endpoint 를 먼저 확정한다.
 
 ## 공통 응답 포맷
 성공:
@@ -63,10 +74,11 @@ LocalNow 서버의 외부 계약 문서. 소비자는 (1) Next.js 데모 웹(`we
 |--------|------|------|------|
 | POST | `/requests` | TRAVELER | 요청 생성. body: `{requestType, lat, lng, description, startAt, durationMin, budgetKrw}` |
 | GET  | `/requests/me` | 인증 | 내 요청 목록 (cursor 페이징) |
-| GET  | `/requests/{id}` | 인증 | 요청 단건 조회 |
+| GET  | `/requests/open` | GUIDE | `OPEN` 상태 요청만 cursor 페이징 |
+| GET  | `/requests/{id}` | 인증 | 요청 단건. TRAVELER=본인만, GUIDE=OPEN 이거나 본인이 offer 를 낸 경우 |
 | POST | `/requests/{id}/accept` | GUIDE | 요청 수락. body: `{message?}`. 멱등 — 동일 guideId 재호출 시 기존 offer 반환 |
 | POST | `/requests/{id}/confirm` | TRAVELER | 가이드 1명 확정. body: `{guideId}`. Redis 분산락으로 중복 확정 차단 |
-| GET  | `/requests/{id}/offers` | 인증 | 수락한 가이드 제안 목록 |
+| GET  | `/requests/{id}/offers` | 인증 | TRAVELER=해당 요청의 traveler 만, GUIDE=OPEN 이거나 본인이 offer 를 낸 경우 |
 | GET  | `/requests/{id}/room` | 인증 | 매칭된 채팅방 조회 |
 | POST | `/requests/{id}/review` | TRAVELER | 리뷰 작성 (요청이 COMPLETED 상태일 때). body: `{rating, comment?}` |
 
@@ -86,7 +98,7 @@ STOMP 실시간 채널은 아래 "WebSocket (STOMP) 채널 규약" 참조.
 | POST | `/payments/intent` | TRAVELER | 결제 의도 생성. body: `{requestId}`. 멱등 — 같은 requestId 재호출 시 기존 intent 반환 |
 | POST | `/payments/{requestId}/capture` | TRAVELER | 결제 캡처. 성공 시 HelpRequest → COMPLETED 전이 |
 | POST | `/payments/{requestId}/refund` | TRAVELER | 환불 (CAPTURED → REFUNDED) |
-| GET  | `/payments/{requestId}` | TRAVELER | 결제 의도 조회 |
+| GET  | `/payments/{requestId}` | TRAVELER/GUIDE | 결제 의도 조회. payer(payerId) 또는 payee(payeeId=가이드) 본인만 |
 
 수수료율: EMERGENCY 25%, 그 외 15%. 계산은 정수 반올림: `(amountKrw × rate + 50) / 100`.
 
@@ -108,7 +120,12 @@ STOMP 실시간 채널은 아래 "WebSocket (STOMP) 채널 규약" 참조.
 
 ## WebSocket (STOMP) 채널 규약
 
-WebSocket 엔드포인트: `ws://{host}/ws` (SockJS 폴백 포함). CONNECT 시 `Authorization: Bearer <token>` 헤더 필수.
+WebSocket (STOMP) 엔드포인트 (동일 STOMP destination):
+
+- `ws://{host}/ws` — 브라우저용 SockJS 폴백 (`/ws/websocket` 등).
+- `ws://{host}/ws-native` — 모바일/네이티브 WebSocket (SockJS 없음).
+
+CONNECT 시 `Authorization: Bearer <token>` 헤더 필수. SUBSCRIBE 는 destination 별로 JWT subject 와 topic id 가 일치할 때만 허용(`ChatChannelInterceptor`).
 
 ### 채팅 채널
 - **SUBSCRIBE** `/topic/rooms/{roomId}` — 해당 방 참여자만 구독 가능 (`ChatChannelInterceptor` 에서 JWT + 방 참여 여부 체크).
@@ -130,7 +147,7 @@ WebSocket 엔드포인트: `ws://{host}/ws` (SockJS 폴백 포함). CONNECT 시 
 - `clientMessageId` 는 재전송 시 중복 저장을 막기 위한 멱등키이다. 서버는 동일 `(roomId, senderId, clientMessageId)` 가 이미 있으면 기존 메시지를 반환한다.
 
 ### 실시간 알림 채널
-RabbitMQ 이벤트를 소비한 `notification` 도메인이 STOMP 로 push 한다. 인증만 있으면 구독 가능(권한 체크 없음 — 토픽 경로에 userId 포함으로 격리).
+RabbitMQ 이벤트를 소비한 `notification` 도메인이 STOMP 로 push 한다. **구독은 인증 + destination 권한 검사** (JWT `sub` 와 `guideId`/`userId` 일치, `/topic/requests/{requestId}` 는 traveler 또는 허용된 guide 만).
 
 | 구독 경로 | 수신 대상 | 페이로드 예시 |
 |-----------|-----------|--------------|

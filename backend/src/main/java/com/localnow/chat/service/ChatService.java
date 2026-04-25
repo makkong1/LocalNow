@@ -1,5 +1,16 @@
 package com.localnow.chat.service;
 
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.chat.domain.ChatMessage;
 import com.localnow.chat.domain.ChatRoom;
 import com.localnow.chat.dto.ChatMessageRequest;
@@ -9,18 +20,11 @@ import com.localnow.chat.repository.ChatMessageRepository;
 import com.localnow.chat.repository.ChatRoomRepository;
 import com.localnow.common.ErrorCode;
 import com.localnow.infra.rabbit.RabbitPublisher;
-import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -28,16 +32,16 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final RabbitPublisher rabbitPublisher;
 
-    public ChatService(
-            ChatRoomRepository chatRoomRepository,
-            ChatMessageRepository chatMessageRepository,
-            SimpMessagingTemplate messagingTemplate,
-            RabbitPublisher rabbitPublisher) {
-        this.chatRoomRepository = chatRoomRepository;
-        this.chatMessageRepository = chatMessageRepository;
-        this.messagingTemplate = messagingTemplate;
-        this.rabbitPublisher = rabbitPublisher;
-    }
+    // public ChatService(
+    // ChatRoomRepository chatRoomRepository,
+    // ChatMessageRepository chatMessageRepository,
+    // SimpMessagingTemplate messagingTemplate,
+    // RabbitPublisher rabbitPublisher) {
+    // this.chatRoomRepository = chatRoomRepository;
+    // this.chatMessageRepository = chatMessageRepository;
+    // this.messagingTemplate = messagingTemplate;
+    // this.rabbitPublisher = rabbitPublisher;
+    // }
 
     @Transactional
     public ChatRoomResponse createRoom(Long requestId, Long travelerId, Long guideId) {
@@ -77,7 +81,8 @@ public class ChatService {
                     messagingTemplate.convertAndSend("/topic/rooms/" + roomId, response);
 
                     Long receiverId = senderId.equals(room.getTravelerId())
-                            ? room.getGuideId() : room.getTravelerId();
+                            ? room.getGuideId()
+                            : room.getTravelerId();
                     publishAfterCommit("chat.message.sent",
                             Map.of("roomId", roomId, "senderId", senderId,
                                     "receiverId", receiverId, "content", req.content()));

@@ -8,7 +8,9 @@ import com.localnow.request.domain.RequestType;
 import com.localnow.request.dto.CreateRequestRequest;
 import com.localnow.request.dto.HelpRequestResponse;
 import com.localnow.request.event.MatchDispatchEvent;
+import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.repository.HelpRequestRepository;
+import com.localnow.user.domain.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +39,9 @@ class RequestServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
+    private MatchOfferRepository matchOfferRepository;
+
+    @Mock
     private RedisGeoService redisGeoService;
 
     @Mock
@@ -47,7 +52,7 @@ class RequestServiceTest {
 
     @BeforeEach
     void setUp() {
-        requestService = new RequestService(repository, eventPublisher);
+        requestService = new RequestService(repository, eventPublisher, matchOfferRepository);
         matchDispatcher = new MatchDispatcher(redisGeoService, rabbitPublisher);
     }
 
@@ -126,6 +131,53 @@ class RequestServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void getRequestForUser_traveler_sees_own_request() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+
+        HelpRequestResponse res = requestService.getRequestForUser(1L, 42L, UserRole.TRAVELER);
+
+        assertThat(res.id()).isEqualTo(1L);
+        assertThat(res.travelerId()).isEqualTo(42L);
+    }
+
+    @Test
+    void getRequestForUser_guide_sees_open_request_without_offer() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+
+        HelpRequestResponse res = requestService.getRequestForUser(1L, 10L, UserRole.GUIDE);
+
+        assertThat(res.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void getRequestForUser_guide_forbidden_when_not_involved_and_not_open() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.MATCHED, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+        when(matchOfferRepository.existsByRequestIdAndGuideId(1L, 10L)).thenReturn(false);
+
+        assertThatThrownBy(() -> requestService.getRequestForUser(1L, 10L, UserRole.GUIDE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void getOpenRequests_returns_only_open() {
+        HelpRequest a = buildRequest(2L, 1L, RequestType.GUIDE, HelpRequestStatus.OPEN, 5000L);
+        HelpRequest b = buildRequest(1L, 2L, RequestType.FOOD, HelpRequestStatus.OPEN, 3000L);
+        when(repository.findByStatusOrderByIdDesc(eq(HelpRequestStatus.OPEN), any()))
+                .thenReturn(List.of(a, b));
+
+        var page = requestService.getOpenRequests(null, 10);
+
+        assertThat(page.items()).hasSize(2);
+        assertThat(page.items().get(0).id()).isEqualTo(2L);
+        assertThat(page.nextCursor()).isNull();
     }
 
     private HelpRequest buildRequest(Long id, Long travelerId, RequestType type,

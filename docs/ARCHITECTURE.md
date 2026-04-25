@@ -35,46 +35,41 @@ localNow/
 │       └── test/
 │           ├── java/com/localnow/
 │           └── resources/
-├── web/                           # Next.js 데모 클라이언트
+├── mobile/                        # React Native (Expo) 모바일 클라이언트
 │   ├── package.json
-│   ├── next.config.ts
-│   ├── tailwind.config.ts
+│   ├── app.json                   # Expo 설정
+│   ├── babel.config.js
+│   ├── tsconfig.json
+│   ├── .env.local                 # gitignore — EXPO_PUBLIC_API_BASE_URL
 │   └── src/
-│       ├── app/
-│       │   ├── layout.tsx
-│       │   ├── page.tsx                 # 랜딩 (로그인 전이면 /login 로 리다이렉트)
-│       │   ├── login/page.tsx
-│       │   ├── signup/page.tsx
-│       │   ├── traveler/page.tsx        # 여행자 뷰
-│       │   ├── guide/page.tsx           # 가이드 뷰
-│       │   └── api/                     # Route Handler — 유일한 백엔드 프록시
-│       │       ├── auth/                # login, signup, logout, me
-│       │       ├── requests/            # CRUD + accept, confirm, offers, room, review
-│       │       ├── rooms/               # messages (히스토리 조회)
-│       │       ├── payments/            # intent, [requestId]/capture
-│       │       ├── guide/               # duty (on-duty 토글 + Redis GEO 등록)
-│       │       └── chat/               # socket-token (STOMP 연결용 토큰 발급)
+│       ├── navigation/
+│       │   ├── RootNavigator.tsx  # 인증 여부에 따라 Auth/App Stack 분기
+│       │   ├── AuthNavigator.tsx  # Login, Signup
+│       │   └── AppNavigator.tsx   # Bottom Tab: Traveler | Guide
+│       ├── screens/
+│       │   ├── LoginScreen.tsx
+│       │   ├── SignupScreen.tsx
+│       │   ├── TravelerScreen.tsx  # 요청 생성, 지도, 오퍼 선택
+│       │   ├── GuideScreen.tsx     # 온듀티 토글, 주변 요청 목록
+│       │   └── ChatScreen.tsx      # 채팅 (STOMP)
 │       ├── components/
-│       │   └── client/                  # "use client" 붙는 인터랙티브 컴포넌트
-│       │       ├── TravelerView.tsx     # 여행자 통합 뷰
-│       │       ├── GuideView.tsx        # 가이드 통합 뷰
-│       │       ├── RequestForm.tsx
-│       │       ├── GuideOfferCard.tsx
-│       │       ├── RequestCard.tsx
-│       │       ├── ChatPanel.tsx
-│       │       ├── LocationMap.tsx      # next/dynamic(ssr:false) 로 감싼 Leaflet 래퍼
-│       │       ├── OnDutyToggle.tsx
-│       │       ├── RealtimeProvider.tsx # STOMP 이벤트 구독 (알림)
-│       │       └── StatusBadge.tsx
+│       │   ├── RequestForm.tsx
+│       │   ├── GuideOfferCard.tsx
+│       │   ├── RequestCard.tsx
+│       │   ├── ChatBubble.tsx
+│       │   ├── StatusBadge.tsx
+│       │   └── LocationMap.tsx     # react-native-maps 래퍼
 │       ├── lib/
-│       │   ├── api-client.ts            # 서버→백엔드 fetch 래퍼 (JWT 주입, server-only)
-│       │   ├── stomp-client.ts          # 브라우저 STOMP.js+SockJS 클라이언트 (client-only)
-│       │   ├── cookies.ts               # HttpOnly 쿠키 read/write 유틸 (server-only)
-│       │   └── env.ts                   # BACKEND_BASE_URL 검증 (server-only)
-│       ├── types/
-│       │   └── api.ts                   # API_CONVENTIONS.md 계약과 1:1 대응
-│       └── test/
-│           └── setup.ts                 # Vitest + jest-dom 셋업
+│       │   ├── api-client.ts       # fetch 래퍼 (SecureStore에서 JWT 로드, 직접 백엔드 호출)
+│       │   ├── stomp-client.ts     # @stomp/stompjs Native WebSocket 클라이언트
+│       │   └── secure-storage.ts   # expo-secure-store 래퍼 (getToken/setToken/clearToken)
+│       ├── hooks/
+│       │   ├── useAuth.ts          # 로그인 상태, 토큰 관리
+│       │   └── useRealtime.ts      # STOMP 구독 관리
+│       └── types/
+│           └── api.ts              # API_CONVENTIONS.md 계약과 1:1 대응
+├── web/                           # Next.js 데모 클라이언트 (0-mvp 참조 구현)
+│   └── ...                        # (기존 구조 유지)
 ├── docs/
 ├── scripts/
 ├── phases/
@@ -98,13 +93,27 @@ localNow/
   - Repository·Redis·Rabbit·WebSocket: Testcontainers.
   - 컨트롤러: `@WebMvcTest` 로 계약 검증.
 
-### 웹
+### 웹 (0-mvp 참조 구현)
 - **Server Component 기본, Client Component 는 꼭 필요한 곳만**. 인터랙션이 필요한 컴포넌트만 `components/client/` 하위에서 `"use client"`.
-- **BFF 패턴**: 브라우저는 `web/src/app/api/**` Route Handler 에만 접근한다. Route Handler 가 JWT 를 HttpOnly 쿠키에서 꺼내 붙여 백엔드로 프록시한다. 브라우저 번들에 `API_BASE_URL` 같은 값이 노출되지 않는다.
+- **BFF 패턴**: 브라우저는 `web/src/app/api/**` Route Handler 에만 접근한다. Route Handler 가 JWT 를 HttpOnly 쿠키에서 꺼내 붙여 백엔드로 프록시한다. 브라우저 번들에 `API_BASE_URL` 같은 값이 노출되지 않는다. 단, BFF 는 백엔드 공식 API 를 감싸는 얇은 adapter 이며 웹 전용 비즈니스 계약을 만들지 않는다.
 - **WebSocket 프록시**: Next.js 는 STOMP 를 직접 relay 하지 않고, 브라우저 STOMP.js 클라이언트가 백엔드 WebSocket 엔드포인트에 직접 붙는다. 단, 연결 URL 은 Route Handler 가 짧은 수명 토큰과 함께 발급하는 방식을 기본으로 한다(토큰 노출 최소화).
 - **데이터 페칭**: Server Component 에서는 `api-client.ts` 로 직접 fetch. Client Component 에서는 TanStack Query 로 `/api/*` 호출.
 - **스타일**: Tailwind 토큰을 `UI_GUIDE.md` 에 맞춰 제한적으로 사용. 컴포넌트 단위로 재사용 가능한 스타일만 추출.
 - **테스트**: Vitest + RTL 로 컴포넌트 단위, Playwright 로 "로그인 → 여행자 요청 생성 → 가이드 수락 → 확정 → 채팅 1회" 시나리오를 단 한 개 e2e 로.
+
+### 모바일 (1-mobile-app)
+- **백엔드 직접 호출**: BFF 없음. `api-client.ts` 가 `EXPO_PUBLIC_API_BASE_URL` 베이스로 백엔드를 직접 호출한다. JWT 는 요청 헤더에 `Authorization: Bearer <token>` 으로 첨부 (ADR-012). 호출하는 HTTP resource, DTO, error code 는 웹 BFF 가 proxy 하는 백엔드 공식 API 와 동일하다.
+- **보안 스토리지**: `expo-secure-store` 로 JWT 저장. iOS Keychain / Android Keystore 를 OS 레벨에서 사용. `AsyncStorage` 는 평문 저장이므로 금지 (ADR-011).
+- **Native WebSocket + STOMP**: `@stomp/stompjs` 를 SockJS 없이 사용. `webSocketFactory: () => new WebSocket(url)`. 백엔드에 `/ws-native` 엔드포인트 추가 필요 (SockJS 없는 순수 WebSocket 핸드셰이크) (ADR-013).
+- **네비게이션**: React Navigation v6. 로그인 여부 → `RootNavigator` 분기. 앱 진입 시 `SecureStore` 에서 토큰 읽어 인증 상태 결정.
+- **데이터 페칭**: TanStack Query v5. `queryClient.invalidateQueries` 로 STOMP 이벤트 수신 시 화면 갱신.
+- **테스트**: Jest + RNTL 로 컴포넌트 단위 테스트. 핵심 시나리오(로그인 → 요청 생성 → 수락 → 확정 → 채팅)는 Detox e2e 또는 수동 시뮬레이터 검증.
+
+### 웹/모바일 API 경계
+- **공식 계약은 백엔드 하나**: `docs/API_CONVENTIONS.md` 의 endpoint 가 유일한 외부 계약이다.
+- **웹 BFF 는 proxy/adapter**: 쿠키에서 JWT 를 읽고 백엔드 Bearer 호출로 변환한다. 웹 화면 편의를 위해 백엔드에 없는 데이터를 조합해 새 계약처럼 만들지 않는다.
+- **모바일은 같은 계약 직접 호출**: `mobile/src/lib/api-client.ts` 가 같은 endpoint 를 호출하고, SecureStore 의 JWT 를 Bearer header 로 붙인다.
+- **클라이언트별 차이는 저장소와 transport**: 웹은 HttpOnly cookie + SockJS `/ws`, 모바일은 SecureStore + Native WebSocket `/ws-native` 를 쓴다. STOMP destination 과 payload 는 동일하게 유지한다.
 
 ## 데이터 흐름
 
