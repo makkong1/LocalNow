@@ -48,27 +48,33 @@ localNow/
 │       │   ├── traveler/page.tsx        # 여행자 뷰
 │       │   ├── guide/page.tsx           # 가이드 뷰
 │       │   └── api/                     # Route Handler — 유일한 백엔드 프록시
-│       │       ├── auth/
-│       │       ├── requests/
-│       │       ├── matches/
-│       │       ├── chat/
-│       │       └── payments/
+│       │       ├── auth/                # login, signup, logout, me
+│       │       ├── requests/            # CRUD + accept, confirm, offers, room, review
+│       │       ├── rooms/               # messages (히스토리 조회)
+│       │       ├── payments/            # intent, [requestId]/capture
+│       │       ├── guide/               # duty (on-duty 토글 + Redis GEO 등록)
+│       │       └── chat/               # socket-token (STOMP 연결용 토큰 발급)
 │       ├── components/
-│       │   ├── server/                  # Server Component 전용 (기본)
 │       │   └── client/                  # "use client" 붙는 인터랙티브 컴포넌트
+│       │       ├── TravelerView.tsx     # 여행자 통합 뷰
+│       │       ├── GuideView.tsx        # 가이드 통합 뷰
 │       │       ├── RequestForm.tsx
 │       │       ├── GuideOfferCard.tsx
+│       │       ├── RequestCard.tsx
 │       │       ├── ChatPanel.tsx
-│       │       └── LocationMap.tsx
+│       │       ├── LocationMap.tsx      # next/dynamic(ssr:false) 로 감싼 Leaflet 래퍼
+│       │       ├── OnDutyToggle.tsx
+│       │       ├── RealtimeProvider.tsx # STOMP 이벤트 구독 (알림)
+│       │       └── StatusBadge.tsx
 │       ├── lib/
-│       │   ├── api-client.ts            # 서버→백엔드 fetch 래퍼 (JWT 주입)
-│       │   ├── stomp-client.ts          # 브라우저→/api/chat/socket 프록시 연결
-│       │   ├── cookies.ts               # HttpOnly 쿠키 read/write 유틸
-│       │   └── env.ts                   # 환경변수 schema (zod)
+│       │   ├── api-client.ts            # 서버→백엔드 fetch 래퍼 (JWT 주입, server-only)
+│       │   ├── stomp-client.ts          # 브라우저 STOMP.js+SockJS 클라이언트 (client-only)
+│       │   ├── cookies.ts               # HttpOnly 쿠키 read/write 유틸 (server-only)
+│       │   └── env.ts                   # BACKEND_BASE_URL 검증 (server-only)
 │       ├── types/
 │       │   └── api.ts                   # API_CONVENTIONS.md 계약과 1:1 대응
-│       └── styles/
-│           └── globals.css              # Tailwind base
+│       └── test/
+│           └── setup.ts                 # Vitest + jest-dom 셋업
 ├── docs/
 ├── scripts/
 ├── phases/
@@ -84,8 +90,9 @@ localNow/
 - **도메인 주도 패키지 분리**: 기술 계층보다 도메인(user, request, match, ...)을 상위 경계로 둔다. 도메인 간 참조는 서비스 인터페이스로만.
 - **이벤트 기반 결합 분리**: 매칭 확정 / 채팅 도착 / 결제 완료처럼 후속 부수효과는 `@TransactionalEventListener(AFTER_COMMIT)` 로 받아 RabbitMQ 발행. 유실이 치명적인 도메인은 이후 Outbox 로 승격 (ADR-006 참고).
 - **동시성 제어**:
-  - 매칭 확정: 요청 단위 Redis 분산락 + DB 낙관적 락(`@Version`).
-  - 결제 상태 전이: DB 트랜잭션 + 상태 머신 검증.
+  - 매칭 확정(`confirm`): 요청 단위 Redis 분산락(`setIfAbsent` 5초 TTL + Lua 원자 해제) 을 먼저 획득 후 `TransactionTemplate` 으로 DB 트랜잭션 실행. DB 는 `PESSIMISTIC_WRITE` 락으로 이중 보호.
+  - 결제 상태 전이: DB 트랜잭션 + 도메인 상태 머신 검증(`PaymentIntent.capture()`).
+  - 매칭 수락(`accept`): 멱등 설계 — 동일 (requestId, guideId) 로 재호출하면 기존 레코드 반환.
 - **테스트 전략**:
   - 서비스 단위 테스트: 순수 JUnit + Mockito.
   - Repository·Redis·Rabbit·WebSocket: Testcontainers.
@@ -125,12 +132,31 @@ localNow/
 
 ### 채팅
 ```
-[브라우저] ──STOMP SEND /app/rooms/{roomId}/messages──▶ [Spring: ChatController]
+[브라우저] ──STOMP SEND /app/rooms/{roomId}/messages──▶ [Spring: StompChatController]
+                                                          ├─ ChatService.sendMessage (clientMessageId 멱등 체크)
                                                           ├─ ChatMessageRepository.save
-                                                          ├─ SimpMessagingTemplate.convertAndSend(/topic/rooms/{id})
-                                                          └─ AFTER_COMMIT: 오프라인 상대면 notification 이벤트 발행
+                                                          ├─ SimpMessagingTemplate.convertAndSend(/topic/rooms/{roomId})
+                                                          └─ AFTER_COMMIT: RabbitMQ publish chat.message.sent
 
 [브라우저: 상대] ──STOMP SUBSCRIBE /topic/rooms/{roomId}──▶ 메시지 수신 → ChatPanel 렌더
+```
+
+### 실시간 알림 (notification 도메인)
+```
+RabbitMQ
+  match.notification 큐 ──▶ MatchNotificationListener
+    match.offer.created  → /topic/guides/{guideId}    : { type:"NEW_REQUEST", requestId, requestType, budgetKrw }
+    match.offer.accepted → /topic/requests/{requestId}: { type:"OFFER_ACCEPTED", guideId }
+    match.confirmed      → /topic/guides/{guideId}    : { type:"MATCH_CONFIRMED", requestId }
+
+  chat.notification 큐 ──▶ ChatNotificationListener
+    chat.message.sent    → /topic/users/{receiverId}  : { type:"CHAT_MESSAGE", roomId, preview }
+
+[브라우저: RealtimeProvider] ──STOMP SUBSCRIBE /topic/guides/{userId} or /topic/requests/{id}──▶
+    NEW_REQUEST        → TanStack Query invalidateQueries(['nearbyRequests'])
+    OFFER_ACCEPTED     → invalidateQueries(['offers', requestId])
+    MATCH_CONFIRMED    → 토스트 알림
+    CHAT_MESSAGE       → invalidateQueries(['chatRoom'])
 ```
 
 ## 상태 관리
@@ -138,7 +164,7 @@ localNow/
 ### 백엔드
 - 영속 상태: MySQL. Flyway 마이그레이션. `ddl-auto=validate`.
 - 단기 상태(캐시·락·GEO): Redis. TTL 명시적.
-- 비동기 큐: RabbitMQ. 토픽 exchange — `match.*`, `chat.*`, `notification.*`.
+- 비동기 큐: RabbitMQ. 토픽 exchange — `match.*`, `chat.*`. 큐: `match.notification`, `chat.notification`.
 - 인증: JWT stateless. 세션/쿠키 없음(백엔드 관점).
 
 ### 웹
