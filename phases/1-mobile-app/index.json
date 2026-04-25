@@ -40,7 +40,7 @@
       "status": "completed",
       "started_at": "2026-04-25T19:22:51+0900",
       "summary": "StatusBadge(상태별 색상 뱃지), RequestCard(EMERGENCY amber강조/수락버튼/isAccepted), OnDutyToggle(expo-location 권한 획득 후 onToggle호출), GuideScreen(온듀티 토글→useOpenRequests 10초폴링→RequestCard목록), useOpenRequests에 enabled/refetchInterval 옵션 추가. RequestCard 4개+OnDutyToggle 3개 테스트 추가. npm test 25 passed, lint clean.",
-      "completed_at": "2026-04-25T19:29:33+0900"
+      "completed_at": "2026-04-25T19:29:44+0900"
     },
     {
       "step": 5,
