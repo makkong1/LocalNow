@@ -1,0 +1,103 @@
+{
+  "project": "LocalNow",
+  "phase": "0-mvp",
+  "steps": [
+    {
+      "step": 0,
+      "name": "project-setup",
+      "status": "completed",
+      "started_at": "2026-04-23T22:26:55+0900",
+      "completed_at": "2026-04-23T22:35:26+0900",
+      "summary": "docker-compose(MySQL/Redis/RabbitMQ), backend Gradle 뼈대(build.gradle+application.yml), web Next.js 뼈대 생성 완료. compileJava + npm build 통과."
+    },
+    {
+      "step": 1,
+      "name": "backend-infra",
+      "status": "completed",
+      "started_at": "2026-04-23T22:35:26+0900",
+      "completed_at": "2026-04-23T22:41:24+0900",
+      "summary": "common(ApiResponse/ErrorCode/GlobalExceptionHandler/RequestIdFilter), config(SecurityConfig/JwtProvider/JwtAuthenticationFilter/WebSocketConfig/RedisConfig/RabbitMQConfig), infra(RedisGeoService/RabbitPublisher/MockPaymentGateway/PassThroughTranslator) 구현 완료. ./gradlew check 통과."
+    },
+    {
+      "step": 2,
+      "name": "backend-user",
+      "status": "completed",
+      "started_at": "2026-04-24T17:01:05+0900",
+      "summary": "user 도메인(User 엔티티/UserRole/UserRepository/UserService/UserController) + V2__user.sql + 4개 DTO 완료. /auth/signup(201), /auth/login(200), /auth/me(JWT) 동작. BCrypt 해시, JWT payload PII 없음. ./gradlew check 통과.",
+      "completed_at": "2026-04-24T17:09:30+0900"
+    },
+    {
+      "step": 3,
+      "name": "backend-request",
+      "status": "completed",
+      "started_at": "2026-04-24T17:09:30+0900",
+      "completed_at": "2026-04-24T17:31:43+0900",
+      "summary": "request 도메인(HelpRequest 상태머신/RequestService/RequestController) + V3__request.sql + MatchDispatcher(AFTER_COMMIT) + Redis GEO 연동 + RabbitMQ 이벤트 발행 완료. budgetKrw=Long, Controller→Repository 직접 호출 없음. ./gradlew check 통과 (IT 테스트는 Docker Desktop 4.69.0 소켓 호환 이슈로 disabledWithoutDocker=true로 건너뜀)."
+    },
+    {
+      "step": 4,
+      "name": "backend-match",
+      "status": "completed",
+      "started_at": "2026-04-24T17:31:43+0900",
+      "completed_at": "2026-04-24T19:00:00+0900",
+      "summary": "match 도메인(MatchOffer 엔티티/MatchOfferRepository/MatchService with Redis 분산락+Lua 해제/MatchController) + V4__match.sql 완료. accept(멱등)/confirm(Redis 분산락+PESSIMISTIC_WRITE)/getOffers 구현. AFTER_COMMIT 이후 Rabbit 발행. 단위테스트 3종 통과. 동시성 IT(MatchServiceConcurrencyIT)는 Docker Desktop 4.69.0 API 호환 이슈로 환경에서 실행 불가(step3 동일 이슈). ./gradlew compileJava+단위테스트 통과."
+    },
+    {
+      "step": 5,
+      "name": "backend-chat",
+      "status": "completed",
+      "started_at": "2026-04-24T19:00:00+0900",
+      "completed_at": "2026-04-24T19:20:00+0900",
+      "summary": "chat 도메인(ChatRoom/ChatMessage/ChatRoomRepository/ChatMessageRepository/ChatService/ChatController/StompChatController) + V5__chat.sql + ChatChannelInterceptor(CONNECT JWT 검증/SUBSCRIBE 방 참여자 체크) + WebSocketConfig 인터셉터 등록 완료. MatchService.doConfirm에서 ChatService.createRoom 호출(트랜잭션 경계 내). 단위테스트 2종(sendMessage 멱등/getHistory 403) 통과. ChatFlowIT은 Docker 호환 이슈로 환경에서 실행 불가."
+    },
+    {
+      "step": 6,
+      "name": "backend-payment",
+      "status": "completed",
+      "started_at": "2026-04-24T19:20:00+0900",
+      "completed_at": "2026-04-24T19:45:00+0900",
+      "summary": "payment 도메인(PaymentIntent 상태머신/수수료 Long 정수 계산/PaymentService/PaymentController) + review 도메인(Review/ReviewService/ReviewController) + V6+V7 마이그레이션 완료. HelpRequest.toCompleted()를 MATCHED→COMPLETED 허용으로 확장(결제 캡처 플로우 지원). capture에서 PaymentIntent와 HelpRequest 상태 변경을 동일 트랜잭션으로 처리. 단위테스트 6종 통과."
+    },
+    {
+      "step": 7,
+      "name": "backend-notification",
+      "status": "completed",
+      "started_at": "2026-04-25T00:00:00+0900",
+      "completed_at": "2026-04-25T00:10:00+0900",
+      "summary": "notification 도메인(MatchNotificationListener/ChatNotificationListener) + @RabbitListener 구독(match.notification/chat.notification) + STOMP push(/topic/guides/{id},/topic/requests/{id},/topic/users/{id}) 완료. ./gradlew check 통과."
+    },
+    {
+      "step": 8,
+      "name": "web-foundation",
+      "status": "completed",
+      "started_at": "2026-04-25T00:10:00+0900",
+      "completed_at": "2026-04-25T00:30:00+0900",
+      "summary": "web 기반 레이어(types/api.ts 전체 타입, lib/api-client+cookies+env, 인증 Route Handler, 로그인/회원가입 페이지, 나머지 Route Handler 스텁) 완료. npm run lint && npm run build 통과."
+    },
+    {
+      "step": 9,
+      "name": "web-traveler",
+      "status": "completed",
+      "started_at": "2026-04-25T00:30:00+0900",
+      "completed_at": "2026-04-25T01:00:00+0900",
+      "summary": "여행자 뷰(/traveler) 완성: LocationMap(Leaflet), RequestForm, GuideOfferCard, ReviewForm + Route Handler 실구현. TanStack Query 데이터 페칭. npm run build 통과."
+    },
+    {
+      "step": 10,
+      "name": "web-guide",
+      "status": "completed",
+      "started_at": "2026-04-25T01:00:00+0900",
+      "completed_at": "2026-04-25T01:30:00+0900",
+      "summary": "가이드 뷰(/guide) 완성: OnDutyToggle(위치 등록/해제), RequestCard(수락), 3초 폴링 요청 목록. 백엔드 GuideController(/guide/duty) 추가. ./gradlew check + npm run build 통과."
+    },
+    {
+      "step": 11,
+      "name": "web-chat",
+      "status": "completed",
+      "started_at": "2026-04-25T01:30:00+0900",
+      "completed_at": "2026-04-25T02:00:00+0900",
+      "summary": "ChatPanel(STOMP.js/SockJS 실시간 채팅) + stomp-client.ts + RealtimeProvider(이벤트 구독) + 여행자/가이드 뷰 통합 완료. MVP 전 구현 완성. npm run build 통과."
+    }
+  ],
+  "created_at": "2026-04-23T22:26:55+0900"
+}
