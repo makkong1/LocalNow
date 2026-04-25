@@ -15,7 +15,8 @@
       "name": "auth-flow",
       "status": "completed",
       "started_at": "2026-04-25T14:26:10+0900",
-      "summary": "AuthProvider+useAuth Context(useAuth.tsx), secure-storage(userId/role/WHEN_UNLOCKED), apiFetch with error handling, LoginScreen/SignupScreen 구현, AppNavigator(Chat탭+헤더), jest.setup.js(expo winter globals), 6개 테스트 통과(npm test+lint 모두 clean)."
+      "summary": "AuthProvider+useAuth Context(useAuth.tsx), secure-storage(userId/role/WHEN_UNLOCKED), apiFetch with error handling, LoginScreen/SignupScreen 구현, AppNavigator(Chat탭+헤더), jest.setup.js(expo winter globals), 6개 테스트 통과(npm test+lint 모두 clean).",
+      "completed_at": "2026-04-25T14:43:03+0900"
     },
     {
       "step": 2,
