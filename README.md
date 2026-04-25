@@ -87,7 +87,6 @@
 
 ```
 localNow/
-├── CLAUDE.md                 # 에이전트에게 강제하는 프로젝트 규칙 (CRITICAL 포함)
 ├── README.md                 # (이 파일)
 ├── docker-compose.yml        # mysql / redis / rabbitmq (로컬 전용)
 ├── backend/                  # Spring Boot API 서버 (0-mvp 완료)
@@ -102,51 +101,7 @@ localNow/
 ├── pr-docs/
 │   ├── 개선사항.md            # 0-mvp 분석 — 백엔드/웹 개선 포인트, 모바일 전환 고려사항
 │   └── 도메인/               # 백엔드 도메인별 리뷰 문서
-├── .claude/
-│   ├── settings.json         # Stop 훅, PreToolUse 위험 명령 가드
-│   └── commands/
-│       ├── harness.md        # /harness  — 하네스 설계·실행 워크플로우
-│       ├── workflow.md       # /workflow — 스킬 파이프라인 순서
-│       ├── review.md         # /review   — 아키텍처·규약·CRITICAL 규칙 점검
-│       ├── fix.md            # /fix      — 버그·에러 트러블슈팅
-│       ├── refactor.md       # /refactor — 구조·성능·가독성 개선
-│       ├── test.md           # /test     — 테스트 생성 (단위·통합·e2e)
-│       ├── commit.md         # /commit   — 스테이징·민감파일 제외·커밋·푸시
-│       └── docs-sync.md      # /docs-sync — 코드 변경에 따른 문서 동기화
-├── scripts/
-│   ├── execute.py            # 하네스 실행기 (phase 의 step 들을 순차 실행)
-│   ├── stop-check.sh         # Stop 훅 스크립트 (non-blocking, harness 브랜치 스킵)
-│   └── test_execute.py
-└── phases/
-    ├── index.json            # phase 전체 인덱스
-    ├── 0-mvp/                # 백엔드 + 웹 (완료, step 0~11)
-    └── 1-mobile-app/         # 모바일 앱 (진행 중, step 0~6)
 ```
-
-## 하네스 사용 플로우
-
-1. Claude 세션에서 `/harness` 커맨드로 설계 대화를 시작한다.
-2. 사용자가 승인하면 다음이 생성된다.
-   - `phases/index.json` — phase 전체 인덱스
-   - `phases/{task-name}/index.json` — step 목록과 상태
-   - `phases/{task-name}/stepN.md` — 각 step 의 지시서
-3. 실행기를 돌린다.
-   ```bash
-   python3 scripts/execute.py 0-mvp            # 순차 실행
-   python3 scripts/execute.py 0-mvp --push     # 완료 후 원격 push
-   ```
-4. 실행기가 자동으로 하는 일
-   - `feat-{task-name}` 브랜치 체크아웃/생성
-   - `CLAUDE.md` + `docs/*.md` 전체를 매 step 프롬프트의 guardrail 로 주입
-   - 완료된 step 의 `summary` 를 다음 step 프롬프트에 컨텍스트로 누적
-   - 실패 시 최대 3회 재시도 (이전 에러 메시지를 프롬프트에 피드백)
-   - 2단계 커밋 분리 (`feat: ...` / `chore: ... output`)
-   - 타임스탬프 자동 기록 (`started_at`, `completed_at`, `failed_at`, `blocked_at`)
-
-에러 복구:
-
-- `error` → `phases/{task}/index.json` 에서 해당 step `status` 를 `"pending"` 으로, `error_message` 삭제 후 재실행.
-- `blocked` → `blocked_reason` 을 해결한 뒤 `status` 를 `"pending"` 으로 돌리고 재실행.
 
 ## 로컬 개발
 
@@ -171,14 +126,6 @@ cd web && npm run dev                  # http://localhost:3000
 # 정리
 docker compose down -v
 ```
-
-환경변수:
-
-| 파일                                               | 내용                               | 주의                 |
-| -------------------------------------------------- | ---------------------------------- | -------------------- |
-| `backend/src/main/resources/application-local.yml` | DB/Redis/RabbitMQ 접속, JWT secret | gitignore, 커밋 금지 |
-| `mobile/.env.local`                                | `EXPO_PUBLIC_API_BASE_URL`         | gitignore, 커밋 금지 |
-| `web/.env.local`                                   | `BACKEND_BASE_URL`                 | gitignore, 커밋 금지 |
 
 ## 시연 시나리오 (포트폴리오용)
 
