@@ -1,15 +1,57 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useOpenRequests } from '../hooks/useRequests';
 import { useAcceptRequest } from '../hooks/useMatches';
+import { useChatRoom } from '../hooks/useChat';
 import { useSetDuty } from '../hooks/useGuide';
+import { useAuth } from '../hooks/useAuth';
+import { stompClient } from '../lib/stomp-client';
 import OnDutyToggle from '../components/OnDutyToggle';
 import RequestCard from '../components/RequestCard';
+import type { StompEvent } from '../types/api';
+import type { AppStackParamList } from '../navigation/AppNavigator';
+
+// Sub-component: 확정된 요청의 채팅 버튼
+function ConfirmedChatButton({ requestId }: { requestId: number }) {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
+  const { data: room } = useChatRoom(requestId);
+
+  if (!room) return null;
+
+  return (
+    <TouchableOpacity
+      testID="guide-go-to-chat-button"
+      style={styles.chatButton}
+      onPress={() => navigation.navigate('ChatRoom', { roomId: room.id, requestId })}
+    >
+      <Text style={styles.chatButtonText}>채팅 시작하기</Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function GuideScreen() {
+  const { userId } = useAuth();
   const [isOnDuty, setIsOnDuty] = useState(false);
   const [acceptedIds, setAcceptedIds] = useState<Set<number>>(new Set());
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
+  const [confirmedRequestId, setConfirmedRequestId] = useState<number | null>(null);
+
+  // Subscribe to MATCH_CONFIRMED on the guide topic (shares the singleton STOMP connection)
+  useEffect(() => {
+    if (!userId) return;
+    const sub = stompClient.subscribe(`/topic/guides/${userId}`, (body) => {
+      try {
+        const event = JSON.parse(body) as StompEvent;
+        if (event.type === 'MATCH_CONFIRMED') {
+          setConfirmedRequestId(event.requestId);
+        }
+      } catch {
+        // ignore malformed frames
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [userId]);
 
   const setDuty = useSetDuty();
   const { data: requestsPage, isLoading: requestsLoading } = useOpenRequests({
@@ -66,10 +108,17 @@ export default function GuideScreen() {
             ))
           )}
 
-          {hasAccepted && (
+          {confirmedRequestId != null && (
+            <View style={styles.chatHint}>
+              <Text style={styles.chatHintText}>요청이 확정되었습니다. 채팅을 시작하세요.</Text>
+              <ConfirmedChatButton requestId={confirmedRequestId} />
+            </View>
+          )}
+
+          {hasAccepted && confirmedRequestId == null && (
             <View style={styles.chatHint}>
               <Text style={styles.chatHintText}>
-                수락한 요청이 확정되면 채팅 탭에서 대화를 시작할 수 있습니다.
+                수락한 요청이 확정되면 채팅이 열립니다.
               </Text>
             </View>
           )}
@@ -117,10 +166,22 @@ const styles = StyleSheet.create({
     borderColor: '#262626',
     padding: 16,
     marginTop: 8,
+    gap: 12,
   },
   chatHintText: {
     color: '#a3a3a3',
     fontSize: 13,
     lineHeight: 20,
+  },
+  chatButton: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 6,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  chatButtonText: {
+    color: '#000',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

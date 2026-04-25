@@ -8,12 +8,15 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useMyRequests, useCreateRequest } from '../hooks/useRequests';
 import { useOffers, useConfirmGuide } from '../hooks/useMatches';
+import { useChatRoom } from '../hooks/useChat';
 import LocationMap, { DEFAULT_LAT, DEFAULT_LNG } from '../components/LocationMap';
 import RequestForm from '../components/RequestForm';
 import GuideOfferCard from '../components/GuideOfferCard';
 import type { CreateRequestBody, HelpRequestResponse } from '../types/api';
+import type { AppStackParamList } from '../navigation/AppNavigator';
 
 function getActiveRequest(items: HelpRequestResponse[]): HelpRequestResponse | null {
   return (
@@ -85,6 +88,37 @@ function OpenView({ request }: { request: HelpRequestResponse }) {
           />
         ))
       )}
+    </ScrollView>
+  );
+}
+
+// Sub-component: MATCHED / IN_PROGRESS 상태 (채팅 + 결제)
+function MatchedView({ request }: { request: HelpRequestResponse }) {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
+  const { data: room } = useChatRoom(request.id);
+
+  function goToChat() {
+    if (room) {
+      navigation.navigate('ChatRoom', { roomId: room.id, requestId: request.id });
+    }
+  }
+
+  return (
+    <ScrollView style={styles.scrollContainer}>
+      <RequestCard request={request} />
+      <Text style={styles.sectionLabel}>다음 단계</Text>
+      <TouchableOpacity
+        testID="go-to-chat-button"
+        style={styles.secondaryButton}
+        onPress={goToChat}
+        disabled={!room}
+      >
+        <Text style={styles.secondaryButtonText}>채팅하기</Text>
+      </TouchableOpacity>
+      {/* step 6에서 결제 네비게이션 구현 */}
+      <TouchableOpacity testID="go-to-payment-button" style={styles.primaryButton}>
+        <Text style={styles.primaryButtonText}>결제하기 (Mock)</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -162,20 +196,7 @@ export default function TravelerScreen() {
 
   // MATCHED / IN_PROGRESS → 채팅 + 결제 이동
   if (activeRequest.status === 'MATCHED' || activeRequest.status === 'IN_PROGRESS') {
-    return (
-      <ScrollView style={styles.scrollContainer}>
-        <RequestCard request={activeRequest} />
-        <Text style={styles.sectionLabel}>다음 단계</Text>
-        {/* step 5에서 실제 채팅 네비게이션 구현 */}
-        <TouchableOpacity testID="go-to-chat-button" style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>채팅하기</Text>
-        </TouchableOpacity>
-        {/* step 6에서 결제 네비게이션 구현 */}
-        <TouchableOpacity testID="go-to-payment-button" style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>결제하기 (Mock)</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
+    return <MatchedView request={activeRequest} />;
   }
 
   // COMPLETED → 리뷰 이동
