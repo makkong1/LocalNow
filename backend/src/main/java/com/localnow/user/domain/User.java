@@ -20,7 +20,8 @@ public class User {
     private String email;
 
     @JsonIgnore
-    @Column(nullable = false)
+    /** null 이면 OAuth(예: Google) 전용 계정 */
+    @Column(nullable = true)
     private String password;
 
     @Column(nullable = false)

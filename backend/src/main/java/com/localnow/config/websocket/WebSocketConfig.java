@@ -1,4 +1,4 @@
-package com.localnow.config;
+package com.localnow.config.websocket;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -7,15 +7,16 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
+@Slf4j
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final ChatChannelInterceptor chatChannelInterceptor;
-
-    public WebSocketConfig(ChatChannelInterceptor chatChannelInterceptor) {
-        this.chatChannelInterceptor = chatChannelInterceptor;
-    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {

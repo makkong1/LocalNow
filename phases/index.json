@@ -6,7 +6,8 @@
     },
     {
       "dir": "1-mobile-app",
-      "status": "pending"
+      "status": "error",
+      "failed_at": "2026-04-25T14:51:36+0900"
     }
   ]
 }

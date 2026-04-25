@@ -1,6 +1,7 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/localnow?serverTimezone=UTC&characterEncoding=UTF-8}
+    # docker-compose MySQL 은 호스트에서 3307 로 노출(로컬 MySQL 과 3306 충돌 방지). 로컬 전용 DB 는 DB_URL 로 3306 등 지정.
+    url: ${DB_URL:jdbc:mysql://localhost:3307/localnow?serverTimezone=UTC&characterEncoding=UTF-8}
     username: ${DB_USERNAME:localnow}
     password: ${DB_PASSWORD:localnow}
   jpa:
@@ -20,6 +21,18 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_OAUTH2_CLIENT_ID:not-configured}
+            client-secret: ${GOOGLE_OAUTH2_CLIENT_SECRET:not-configured}
+            scope:
+              - openid
+              - profile
+              - email
+            # Google OIDC, redirect: {baseUrl}/login/oauth2/code/{registrationId}
 
 jwt:
   secret: ${JWT_SECRET:please-change-this-secret-in-production}
@@ -28,13 +41,35 @@ jwt:
 server:
   port: 8081
 
+# Google OAuth2 완료 후 프론트(웹/뷰)가 토큰·오류를 받는 URL. fragment(#)에 access_token 을 둔다(성공 핸들러).
+# http-access-log: 요청 한 줄(메서드/URI/상태/소요ms). false 또는 HTTP_ACCESS_LOG=false 로 끄기
+app:
+  http-access-log: ${HTTP_ACCESS_LOG:true}
+  oauth2:
+    success-redirect: ${OAUTH2_SUCCESS_REDIRECT_URL:http://localhost:3000/oauth/callback}
+    failure-redirect: ${OAUTH2_FAILURE_REDIRECT_URL:http://localhost:3000/oauth/callback?error=1}
+
 # 콘솔 로그에 MDC: 요청ID·서비스 operation (JPA SQL 등 동일 스레드 로그와 상관)
+# 프로덕션에선 root/com.localnow/SQL 등 를 INFO로 내리거나 spring.profiles 로 분리하는 것이 좋다.
+
 logging:
   level:
-  org.hibernate.SQL: TRACE
-  org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    root: INFO
+    com.localnow: DEBUG
+    com.localnow.http: INFO
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.orm.jpa: DEBUG
+    org.springframework.transaction: DEBUG
+    org.springframework.amqp: DEBUG
+    org.springframework.data.redis: DEBUG
+    org.hibernate.SQL: DEBUG
+    # Hibernate 6 — 바인딩 파라미터(매우 다수)
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
-    console: "%d{ISO8601} %5p [%X{requestId:-}][%X{operation:-}] %logger{36} - %m%n"
+    console: "%d{ISO8601} %5p [%t] [%X{requestId:-}][%X{operation:-}] %logger{40} - %m%n%wEx"
+  
 
 management:
   endpoints:

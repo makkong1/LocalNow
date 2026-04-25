@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ApiResponse, UserRole } from '@/types/api';
+import type { ApiError, ApiResponse, UserRole } from '@/types/api';
+import ApiErrorDisplay from './ApiErrorDisplay';
 
 export default function SignupForm() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function SignupForm() {
     role: 'TRAVELER' as UserRole,
     city: '',
   });
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -37,10 +38,16 @@ export default function SignupForm() {
       if (data.success) {
         router.push('/login');
       } else {
-        setError(data.error?.message ?? '회원가입에 실패했습니다.');
+        setError(
+          data.error ?? {
+            code: 'INTERNAL_ERROR',
+            message: '회원가입에 실패했습니다.',
+            fields: null,
+          },
+        );
       }
     } catch {
-      setError('네트워크 오류가 발생했습니다.');
+      setError({ code: 'INTERNAL_ERROR', message: '네트워크 오류가 발생했습니다.', fields: null });
     } finally {
       setLoading(false);
     }
@@ -68,9 +75,11 @@ export default function SignupForm() {
           value={form.password}
           onChange={handleChange}
           required
+          minLength={8}
           className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500"
           placeholder="••••••••"
         />
+        <p className="mt-1 text-xs text-neutral-500">8자 이상 입력하세요.</p>
       </div>
       <div>
         <label className="block text-sm text-neutral-400 mb-1">이름</label>
@@ -108,7 +117,7 @@ export default function SignupForm() {
           placeholder="서울"
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      <ApiErrorDisplay error={error} fallback="회원가입에 실패했습니다." />
       <button
         type="submit"
         disabled={loading}

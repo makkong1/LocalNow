@@ -4,11 +4,11 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@code com.localnow..service} 공개 메서드에 MDC {@code operation}을 설정해
@@ -18,12 +18,15 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@Slf4j
 public class ServiceLayerMonitoringAspect {
 
-    private static final Logger log = LoggerFactory.getLogger(ServiceLayerMonitoringAspect.class);
+    // private static final Logger log =
+    // LoggerFactory.getLogger(ServiceLayerMonitoringAspect.class);
 
     @Pointcut("execution(public * com.localnow..service..*.*(..))")
-    public void serviceLayer() {}
+    public void serviceLayer() {
+    }
 
     @Around("serviceLayer()")
     public Object monitor(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -40,7 +43,8 @@ public class ServiceLayerMonitoringAspect {
                 if (outer) {
                     long durationMs = (System.nanoTime() - startNs) / 1_000_000L;
                     long deltaBytes = usedHeapBytes() - usedHeapBefore;
-                    log.info("service.monitor op={} durationMs={} heapDeltaBytes={}", operation, durationMs, deltaBytes);
+                    log.info("service.monitor op={} durationMs={} heapDeltaBytes={}", operation, durationMs,
+                            deltaBytes);
                 }
             } finally {
                 OperationMdcHolder.leave();

@@ -9,10 +9,16 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record SignupRequest(
-        @NotBlank @Email String email,
-        @NotBlank @Size(min = 8) String password,
-        @NotBlank String name,
-        @NotNull UserRole role,
+        @NotBlank(message = "이메일을 입력하세요.")
+        @Email(message = "올바른 이메일 형식이 아닙니다.")
+        String email,
+        @NotBlank(message = "비밀번호를 입력하세요.")
+        @Size(min = 8, message = "비밀번호는 8자 이상이어야 합니다.")
+        String password,
+        @NotBlank(message = "이름을 입력하세요.")
+        String name,
+        @NotNull(message = "역할을 선택하세요.")
+        UserRole role,
         List<String> languages,
         String city
 ) {}

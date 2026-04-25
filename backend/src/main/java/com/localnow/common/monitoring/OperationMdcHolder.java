@@ -1,9 +1,9 @@
 package com.localnow.common.monitoring;
 
-import org.slf4j.MDC;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
+
+import org.slf4j.MDC;
 
 /**
  * 서비스 메서드 중첩 호출 시 MDC {@code operation}을 스택으로 유지해,
@@ -13,7 +13,8 @@ public final class OperationMdcHolder {
 
     private static final ThreadLocal<Deque<String>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
 
-    private OperationMdcHolder() {}
+    private OperationMdcHolder() {
+    }
 
     /**
      * @return true 이면 이번 진입이 최상위(스택 깊이 1) 서비스 호출이다. 모니터링 요약 로그는 이 경우에만 남긴다.

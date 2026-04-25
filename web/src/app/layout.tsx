@@ -8,6 +8,9 @@ import LogoutButton from '@/components/client/LogoutButton';
 export const metadata: Metadata = {
   title: 'LocalNow',
   description: '여행 중 실시간 현지 가이드 매칭 플랫폼',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  },
 };
 
 export default async function RootLayout({

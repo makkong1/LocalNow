@@ -1,25 +1,26 @@
 package com.localnow.request.service;
 
-import com.localnow.infra.rabbit.RabbitPublisher;
-import com.localnow.infra.redis.RedisGeoService;
-import com.localnow.request.event.MatchDispatchEvent;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.List;
-import java.util.Map;
+import com.localnow.infra.rabbit.RabbitPublisher;
+import com.localnow.infra.redis.RedisGeoService;
+import com.localnow.request.event.MatchDispatchEvent;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class MatchDispatcher {
 
     private final RedisGeoService redisGeoService;
     private final RabbitPublisher rabbitPublisher;
-
-    public MatchDispatcher(RedisGeoService redisGeoService, RabbitPublisher rabbitPublisher) {
-        this.redisGeoService = redisGeoService;
-        this.rabbitPublisher = rabbitPublisher;
-    }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMatchDispatch(MatchDispatchEvent event) {
@@ -33,8 +34,7 @@ public class MatchDispatcher {
                 "lat", event.lat(),
                 "lng", event.lng(),
                 "budgetKrw", event.budgetKrw(),
-                "guideIds", guideIds
-        );
+                "guideIds", guideIds);
         rabbitPublisher.publish("match.offer.created", payload);
     }
 }

@@ -3,7 +3,7 @@ package com.localnow.common;
 public enum ErrorCode {
     AUTH_UNAUTHENTICATED(401, "Unauthenticated"),
     AUTH_FORBIDDEN(403, "Forbidden"),
-    VALIDATION_FAILED(422, "Validation failed"),
+    VALIDATION_FAILED(422, "입력 값을 확인해 주세요."),
     REQUEST_NOT_FOUND(404, "Request not found"),
     REQUEST_NOT_OPEN(409, "Request is not open"),
     MATCH_ALREADY_CONFIRMED(409, "Match already confirmed"),

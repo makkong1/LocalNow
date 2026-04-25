@@ -1,7 +1,8 @@
-package com.localnow.config;
+package com.localnow.config.websocket;
 
 import com.localnow.chat.domain.ChatRoom;
 import com.localnow.chat.repository.ChatRoomRepository;
+import com.localnow.config.security.JwtProvider;
 import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.domain.RequestType;

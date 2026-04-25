@@ -1,9 +1,10 @@
 package com.localnow.chat.repository;
 
-import com.localnow.chat.domain.ChatRoom;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.localnow.chat.domain.ChatRoom;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     Optional<ChatRoom> findByRequestId(Long requestId);
