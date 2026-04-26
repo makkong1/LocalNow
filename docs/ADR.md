@@ -84,3 +84,8 @@ MVP 속도 최우선. 외부 의존성은 "정말 매칭/채팅/결제가 동작
 **트레이드오프**: 실서비스 권한·SSO·PII 취급은 이 설계로 충분하지 않다. 신고/환불 등 쓰기 운영은 이후 phase 로 분리한다.
 
 **로컬 시드**: `admin@localnow.test` + 비밀번호 `localnow-admin-2026` (MySQL V9 마이그레이션). 프로덕션에서는 이 계정·해시를 사용하지 말고 회전하라.
+
+### ADR-015: 로컬 크리덴셜은 `application-local.yml` 에서만 관리한다
+**결정**: Google OAuth2 client-id/secret, JWT secret 등 외부 서비스 키는 `application.yml`에 하드코딩하지 않는다. `application-local.yml`(`.gitignore` 등록)에 저장하고 `spring.config.import: "optional:classpath:application-local.yml"` 로 로드한다. CI/프로덕션에서는 환경변수(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET` 등)로 주입한다.
+**이유**: 크리덴셜이 git 히스토리에 노출되면 rotate 비용이 크다. `application.yml`에는 `${ENV_VAR:}` 플레이스홀더만 남긴다.
+**트레이드오프**: 로컬 최초 셋업 시 `application-local.yml`을 직접 생성해야 한다. `optional:` prefix 를 붙여 파일이 없어도 서버가 뜨게 하되, 해당 기능(Google 로그인)은 동작하지 않는다.
