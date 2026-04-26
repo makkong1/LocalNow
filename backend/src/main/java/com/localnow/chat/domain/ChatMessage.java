@@ -6,7 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "chat_messages")
+@Table(name = "chat_messages",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_chat_message_idempotent",
+                columnNames = {"room_id", "sender_id", "client_message_id"}))
 public class ChatMessage {
 
     @Id

@@ -17,6 +17,12 @@ import com.localnow.request.domain.HelpRequestStatus;
 import jakarta.persistence.LockModeType;
 
 public interface HelpRequestRepository extends JpaRepository<HelpRequest, Long> {
+
+    long countByStatus(HelpRequestStatus status);
+
+    @Query("SELECT r.status, COUNT(r) FROM HelpRequest r GROUP BY r.status")
+    List<Object[]> countGroupByStatus();
+
     List<HelpRequest> findByTravelerIdOrderByCreatedAtDesc(Long travelerId);
 
     Page<HelpRequest> findByStatusOrderByCreatedAtDesc(HelpRequestStatus status, Pageable pageable);
