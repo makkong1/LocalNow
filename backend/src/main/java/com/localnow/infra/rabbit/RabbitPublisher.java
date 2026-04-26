@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.localnow.config.RabbitMQConfig;
+import com.localnow.config.rabbit.RabbitMQConfig;
 
 import lombok.extern.slf4j.Slf4j;
 

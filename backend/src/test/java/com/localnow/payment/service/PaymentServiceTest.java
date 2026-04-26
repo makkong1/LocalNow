@@ -1,6 +1,25 @@
 package com.localnow.payment.service;
 
-import com.localnow.infra.pg.MockPaymentGateway;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.localnow.infra.pg.PaymentGateway;
 import com.localnow.match.domain.MatchOffer;
 import com.localnow.match.domain.MatchOfferStatus;
@@ -15,32 +34,18 @@ import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.domain.RequestType;
 import com.localnow.request.repository.HelpRequestRepository;
 import com.localnow.user.domain.UserRole;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
 
-    @Mock PaymentIntentRepository paymentIntentRepository;
-    @Mock HelpRequestRepository helpRequestRepository;
-    @Mock MatchOfferRepository matchOfferRepository;
-    @Mock PaymentGateway paymentGateway;
+    @Mock
+    PaymentIntentRepository paymentIntentRepository;
+    @Mock
+    HelpRequestRepository helpRequestRepository;
+    @Mock
+    MatchOfferRepository matchOfferRepository;
+    @Mock
+    PaymentGateway paymentGateway;
 
     private PaymentService paymentService;
 
@@ -133,7 +138,7 @@ class PaymentServiceTest {
     }
 
     private HelpRequest buildRequest(Long id, Long travelerId, HelpRequestStatus status,
-                                     RequestType type, long budget) {
+            RequestType type, long budget) {
         HelpRequest r = new HelpRequest();
         r.setId(id);
         r.setTravelerId(travelerId);
@@ -148,7 +153,7 @@ class PaymentServiceTest {
     }
 
     private PaymentIntent buildIntent(Long id, Long requestId, Long payerId, Long payeeId,
-                                      long amount, long fee, PaymentStatus status) {
+            long amount, long fee, PaymentStatus status) {
         PaymentIntent p = new PaymentIntent();
         p.setRequestId(requestId);
         p.setPayerId(payerId);

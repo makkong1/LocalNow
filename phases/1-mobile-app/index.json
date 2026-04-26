@@ -29,20 +29,26 @@
     {
       "step": 3,
       "name": "traveler-screens",
-      "status": "error",
-      "started_at": "2026-04-25T14:51:25+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-04-25T14:51:36+0900"
+      "status": "completed",
+      "started_at": "2026-04-25T19:13:18+0900",
+      "completed_at": "2026-04-25T19:23:04+0900",
+      "summary": "LocationMap(OSM UrlTile+expo-location GPS), RequestForm(유형/설명/시각/시간/금액), GuideOfferCard(별점/확정버튼), ReviewForm(별점/코멘트), TravelerScreen(요청없음→지도+Modal폼/OPEN→오퍼목록/MATCHED→채팅+결제자리/COMPLETED→리뷰자리), ChatScreen(매칭확정 후 채팅방 플레이스홀더). npm test 18 passed, lint clean."
     },
     {
       "step": 4,
       "name": "guide-screens",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-25T19:22:51+0900",
+      "summary": "StatusBadge(상태별 색상 뱃지), RequestCard(EMERGENCY amber강조/수락버튼/isAccepted), OnDutyToggle(expo-location 권한 획득 후 onToggle호출), GuideScreen(온듀티 토글→useOpenRequests 10초폴링→RequestCard목록), useOpenRequests에 enabled/refetchInterval 옵션 추가. RequestCard 4개+OnDutyToggle 3개 테스트 추가. npm test 25 passed, lint clean.",
+      "completed_at": "2026-04-25T19:29:44+0900"
     },
     {
       "step": 5,
       "name": "chat-realtime",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-26T00:18:46+0900",
+      "summary": "stomp-client.ts(LocalNowStompClient 싱글톤/Native WebSocket/SockJS 없음), useRealtime(userId+role+activeRequestId 구독 관리/언마운트 disconnect), ChatBubble(amber/dark 말풍선), ChatScreen(FlatList+STOMP구독+uuid clientMessageId), AppNavigator(Root Stack+MainTabs+ChatRoom), TravelerScreen MATCHED→navigation.navigate('ChatRoom'), GuideScreen MATCH_CONFIRMED→ConfirmedChatButton. npm test 35 passed, lint clean.",
+      "completed_at": "2026-04-26T00:32:40+0900"
     },
     {
       "step": 6,

@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ApiResponse, AuthResponse } from '@/types/api';
+import type { ApiError, ApiResponse, AuthResponse } from '@/types/api';
+import ApiErrorDisplay from './ApiErrorDisplay';
 
 export default function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -28,10 +29,16 @@ export default function LoginForm() {
       if (data.success && data.data) {
         router.push(data.data.role === 'GUIDE' ? '/guide' : '/traveler');
       } else {
-        setError(data.error?.message ?? '로그인에 실패했습니다.');
+        setError(
+          data.error ?? {
+            code: 'INTERNAL_ERROR',
+            message: '로그인에 실패했습니다.',
+            fields: null,
+          },
+        );
       }
     } catch {
-      setError('네트워크 오류가 발생했습니다.');
+      setError({ code: 'INTERNAL_ERROR', message: '네트워크 오류가 발생했습니다.', fields: null });
     } finally {
       setLoading(false);
     }
@@ -61,7 +68,7 @@ export default function LoginForm() {
           placeholder="••••••••"
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      <ApiErrorDisplay error={error} fallback="로그인에 실패했습니다." />
       <button
         type="submit"
         disabled={loading}

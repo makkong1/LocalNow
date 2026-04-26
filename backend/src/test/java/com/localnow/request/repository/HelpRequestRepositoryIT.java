@@ -1,8 +1,9 @@
 package com.localnow.request.repository;
 
-import com.localnow.request.domain.HelpRequest;
-import com.localnow.request.domain.HelpRequestStatus;
-import com.localnow.request.domain.RequestType;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -13,10 +14,9 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.localnow.request.domain.HelpRequest;
+import com.localnow.request.domain.HelpRequestStatus;
+import com.localnow.request.domain.RequestType;
 
 @DataJpaTest(properties = {
         "spring.jpa.hibernate.ddl-auto=create-drop",
@@ -65,6 +65,35 @@ class HelpRequestRepositoryIT {
 
         assertThat(results).hasSize(2);
         assertThat(results).allMatch(r -> r.getTravelerId().equals(200L));
+    }
+
+    @Test
+    void countGroupByStatus_returns_correct_counts_per_status() {
+        HelpRequest open1 = buildRequest(300L, RequestType.GUIDE, 5000L);
+        HelpRequest open2 = buildRequest(300L, RequestType.FOOD, 3000L);
+        HelpRequest completed = buildRequest(300L, RequestType.TRANSLATION, 4000L);
+        completed.toMatched();
+        completed.toCompleted();
+
+        repository.save(open1);
+        repository.save(open2);
+        repository.save(completed);
+
+        List<Object[]> rows = repository.countGroupByStatus();
+
+        assertThat(rows).isNotEmpty();
+
+        long openCount = rows.stream()
+                .filter(r -> r[0] == HelpRequestStatus.OPEN)
+                .mapToLong(r -> (Long) r[1])
+                .sum();
+        long completedCount = rows.stream()
+                .filter(r -> r[0] == HelpRequestStatus.COMPLETED)
+                .mapToLong(r -> (Long) r[1])
+                .sum();
+
+        assertThat(openCount).isEqualTo(2L);
+        assertThat(completedCount).isEqualTo(1L);
     }
 
     private HelpRequest buildRequest(Long travelerId, RequestType type, long budgetKrw) {

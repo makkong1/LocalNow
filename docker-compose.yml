@@ -6,8 +6,9 @@ services:
       MYSQL_USER: ${MYSQL_USER:-localnow}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-localnow}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    # 호스트(맥) 포트: 로컬 MySQL이 3306을 쓰면 3307 등으로 겹치지 않게 조정. 오른쪽 3306은 컨테이너 내부.
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:

@@ -11,7 +11,7 @@ localNow/
 │       │   ├── java/com/localnow/
 │       │   │   ├── LocalNowApplication.java
 │       │   │   ├── config/              # Security, WebSocket, Redis, RabbitMQ, OpenAPI
-│       │   │   ├── common/              # ApiResponse, ErrorCode, Clock 등
+│       │   │   ├── common/              # ApiResponse, ErrorCode, security (AuthenticationUserRoles), Clock 등
 │       │   │   ├── user/                # 도메인: 사용자/인증
 │       │   │   │   ├── controller/
 │       │   │   │   ├── service/
@@ -23,6 +23,10 @@ localNow/
 │       │   │   ├── chat/                # 도메인: 채팅방 + 메시지 영속화
 │       │   │   ├── payment/             # 도메인: 결제 의도/수수료 분배 (Mock PG)
 │       │   │   ├── notification/        # 도메인: RabbitMQ 이벤트 소비/발행
+│       │   │   ├── admin/               # 도메인: 읽기 전용 집계 대시보드 (ADR-014)
+│       │   │   │   ├── controller/
+│       │   │   │   ├── service/
+│       │   │   │   └── dto/
 │       │   │   └── infra/
 │       │   │       ├── redis/           # RedisTemplate 래퍼, GEO 조회
 │       │   │       ├── rabbit/          # Exchange/Queue 선언, Publisher
@@ -51,25 +55,39 @@ localNow/
 │       │   ├── SignupScreen.tsx
 │       │   ├── TravelerScreen.tsx  # 요청 생성, 지도, 오퍼 선택
 │       │   ├── GuideScreen.tsx     # 온듀티 토글, 주변 요청 목록
-│       │   └── ChatScreen.tsx      # 채팅 (STOMP)
+│       │   ├── ChatScreen.tsx      # 채팅 (STOMP)
+│       │   ├── PaymentScreen.tsx   # 결제 의도 생성·캡처 (Mock PG)
+│       │   └── ReviewScreen.tsx    # 완료 후 가이드 리뷰 작성
 │       ├── components/
 │       │   ├── RequestForm.tsx
 │       │   ├── GuideOfferCard.tsx
 │       │   ├── RequestCard.tsx
 │       │   ├── ChatBubble.tsx
 │       │   ├── StatusBadge.tsx
+│       │   ├── OnDutyToggle.tsx    # 가이드 온듀티 토글 버튼
+│       │   ├── ReviewForm.tsx      # 별점·코멘트 입력 폼
 │       │   └── LocationMap.tsx     # react-native-maps 래퍼
 │       ├── lib/
 │       │   ├── api-client.ts       # fetch 래퍼 (SecureStore에서 JWT 로드, 직접 백엔드 호출)
 │       │   ├── stomp-client.ts     # @stomp/stompjs Native WebSocket 클라이언트
 │       │   └── secure-storage.ts   # expo-secure-store 래퍼 (getToken/setToken/clearToken)
 │       ├── hooks/
-│       │   ├── useAuth.ts          # 로그인 상태, 토큰 관리
-│       │   └── useRealtime.ts      # STOMP 구독 관리
+│       │   ├── useAuth.tsx         # 로그인 상태, 토큰 관리
+│       │   ├── useRealtime.ts      # STOMP 구독 관리
+│       │   ├── useRequests.ts      # 도움 요청 목록·단건 조회
+│       │   ├── useMatches.ts       # 오퍼 수락·확정
+│       │   ├── useGuide.ts         # 온듀티 토글·주변 요청 조회
+│       │   ├── usePayment.ts       # 결제 의도 생성·캡처
+│       │   ├── useReview.ts        # 리뷰 작성
+│       │   └── useChat.ts          # 채팅 메시지 히스토리
+│       ├── __tests__/              # Jest + RNTL 단위 테스트
 │       └── types/
 │           └── api.ts              # API_CONVENTIONS.md 계약과 1:1 대응
 ├── web/                           # Next.js 데모 클라이언트 (0-mvp 참조 구현)
-│   └── ...                        # (기존 구조 유지)
+│   └── src/
+│       └── app/
+│           ├── admin/             # 관리자 대시보드 페이지 (ADMIN 역할 전용)
+│           └── api/admin/         # 백엔드 /admin/** 프록시 Route Handler
 ├── docs/
 ├── scripts/
 ├── phases/
@@ -81,6 +99,7 @@ localNow/
 ## 패턴
 
 ### 백엔드
+- **HTTP 역할 검사**: JWT → `ROLE_TRAVELER` / `ROLE_GUIDE`. 엔드포인트별 허용 역할은 컨트롤러에서 `AuthenticationUserRoles` 로 거르고(미통과 시 `AUTH_FORBIDDEN`), 요청/결제/매칭 단건 접근은 서비스에서 당사자·상태를 재검증한다.
 - **계층형 (Controller → Service → Repository/Infra)** 기본. 헥사고날은 MVP 에서 과하다.
 - **도메인 주도 패키지 분리**: 기술 계층보다 도메인(user, request, match, ...)을 상위 경계로 둔다. 도메인 간 참조는 서비스 인터페이스로만.
 - **이벤트 기반 결합 분리**: 매칭 확정 / 채팅 도착 / 결제 완료처럼 후속 부수효과는 `@TransactionalEventListener(AFTER_COMMIT)` 로 받아 RabbitMQ 발행. 유실이 치명적인 도메인은 이후 Outbox 로 승격 (ADR-006 참고).
@@ -130,13 +149,12 @@ localNow/
     MatchDispatcher: Redis GEOSEARCH 로 주변 가이드 조회
                       └─▶ RabbitMQ publish: match.offer.created (가이드별 큐)
 
-[브라우저: 가이드] ──POST /api/matches/{id}/accept──▶ Next Route Handler ──▶ MatchController ──▶ MatchService
-                                                                                                    ├─ Redis 분산락(requestId)
-                                                                                                    ├─ DB 낙관적 락으로 상태 전이
-                                                                                                    └─ 이벤트: match.accepted
+[브라우저: 가이드] ──POST /api/requests/{id}/accept──▶ Next Route Handler ──▶ POST /requests/{id}/accept: MatchController ──▶ MatchService.accept
+                                                                                                    (accept 자체는 멱등 저장; confirm 에서 Redis 분산락)
 
-[브라우저: 여행자] ──POST /api/requests/{id}/confirm──▶ 후보 가이드 1명 선택
-                                                          └─ 결제 의도 생성(MockPaymentGateway)
+[브라우저: 여행자] ──POST /api/requests/{id}/confirm──▶ Next Route Handler ──▶ MatchController.confirm ──▶ MatchService
+                                                          (body: guideId; Redis 분산락 + DB 트랜잭션으로 MATCHED 전이)
+                                                          └─ 이후 흐름: 결제 의도/캡처 등은 `payment` 도메인
 ```
 
 ### 채팅

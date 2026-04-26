@@ -32,7 +32,8 @@ class ApiResponseTest {
     void fail_includes_field_errors() {
         List<ApiResponse.FieldError> fields = List.of(
                 new ApiResponse.FieldError("name", "must not be blank"));
-        ApiResponse<?> response = ApiResponse.fail(ErrorCode.VALIDATION_FAILED, "Validation failed", fields);
+        ApiResponse<?> response = ApiResponse.fail(
+                ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.getDefaultMessage(), fields);
 
         assertThat(response.error().fields()).hasSize(1);
         assertThat(response.error().fields().get(0).field()).isEqualTo("name");

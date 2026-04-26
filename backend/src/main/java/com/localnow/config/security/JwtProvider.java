@@ -1,4 +1,4 @@
-package com.localnow.config;
+package com.localnow.config.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

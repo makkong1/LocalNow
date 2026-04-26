@@ -1,33 +1,33 @@
 package com.localnow.user.service;
 
-import com.localnow.config.JwtProvider;
-import com.localnow.user.domain.User;
-import com.localnow.user.domain.UserRole;
-import com.localnow.user.dto.AuthResponse;
-import com.localnow.user.dto.LoginRequest;
-import com.localnow.user.dto.SignupRequest;
-import com.localnow.user.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.Mock;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.localnow.config.security.JwtProvider;
+import com.localnow.user.domain.User;
+import com.localnow.user.domain.UserRole;
+import com.localnow.user.dto.AuthResponse;
+import com.localnow.user.dto.LoginRequest;
+import com.localnow.user.dto.SignupRequest;
+import com.localnow.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -94,6 +94,18 @@ class UserServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void login_oauthOnlyAccount_cannotUsePassword() {
+        User user = buildUser(1L, "oauth@test.com", "O", UserRole.TRAVELER);
+        user.setPassword(null);
+        when(userRepository.findByEmail("oauth@test.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.login(new LoginRequest("oauth@test.com", "any")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.UNAUTHORIZED));
     }
 
     @Test

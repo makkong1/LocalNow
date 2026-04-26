@@ -1,4 +1,4 @@
-package com.localnow.config;
+package com.localnow.config.rabbit;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

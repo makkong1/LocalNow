@@ -1,6 +1,8 @@
 package com.localnow.request.infra;
 
-import com.localnow.infra.redis.RedisGeoService;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,9 +16,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.localnow.infra.redis.RedisGeoService;
 
 @Testcontainers(disabledWithoutDocker = true)
 class MatchDispatcherIT {

@@ -1,16 +1,13 @@
 package com.localnow.match.service;
 
-import com.localnow.match.domain.MatchOffer;
-import com.localnow.match.domain.MatchOfferStatus;
-import com.localnow.match.dto.ConfirmRequest;
-import com.localnow.match.repository.MatchOfferRepository;
-import com.localnow.request.domain.HelpRequest;
-import com.localnow.request.domain.HelpRequestStatus;
-import com.localnow.request.domain.RequestType;
-import com.localnow.request.repository.HelpRequestRepository;
-import com.localnow.user.domain.User;
-import com.localnow.user.domain.UserRole;
-import com.localnow.user.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,14 +22,17 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.localnow.match.domain.MatchOffer;
+import com.localnow.match.domain.MatchOfferStatus;
+import com.localnow.match.dto.ConfirmRequest;
+import com.localnow.match.repository.MatchOfferRepository;
+import com.localnow.request.domain.HelpRequest;
+import com.localnow.request.domain.HelpRequestStatus;
+import com.localnow.request.domain.RequestType;
+import com.localnow.request.repository.HelpRequestRepository;
+import com.localnow.user.domain.User;
+import com.localnow.user.domain.UserRole;
+import com.localnow.user.repository.UserRepository;
 
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
@@ -63,10 +63,14 @@ class MatchServiceConcurrencyIT {
         registry.add("spring.rabbitmq.port", () -> rabbit.getMappedPort(5672));
     }
 
-    @Autowired MatchService matchService;
-    @Autowired UserRepository userRepository;
-    @Autowired HelpRequestRepository helpRequestRepository;
-    @Autowired MatchOfferRepository matchOfferRepository;
+    @Autowired
+    MatchService matchService;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    HelpRequestRepository helpRequestRepository;
+    @Autowired
+    MatchOfferRepository matchOfferRepository;
 
     @AfterEach
     void cleanup() {
