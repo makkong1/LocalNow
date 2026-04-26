@@ -20,14 +20,22 @@ public final class OAuth2UserResponseMapper {
 
     private OAuth2UserResponseMapper() {}
 
-    public static OAuth2User toOAuth2UserWithLocalAttributes(OAuth2User googleUser, User local) {
-        Map<String, Object> attrs = new HashMap<>(googleUser.getAttributes());
+    public static OAuth2User toOAuth2UserWithLocalAttributes(OAuth2User source, User local) {
+        return toOAuth2UserWithLocalAttributes(source, local, "sub");
+    }
+
+    /**
+     * @param nameAttributeKey Google OIDC: {@code sub}, GitHub OAuth2 userinfo: {@code id}
+     */
+    public static OAuth2User toOAuth2UserWithLocalAttributes(
+            OAuth2User source, User local, String nameAttributeKey) {
+        Map<String, Object> attrs = new HashMap<>(source.getAttributes());
         attrs.put(ATTR_LOCAL_USER_ID, local.getId());
         attrs.put(ATTR_LOCAL_ROLE, local.getRole().name());
         return new DefaultOAuth2User(
                 List.of(new SimpleGrantedAuthority("ROLE_" + local.getRole().name())),
                 attrs,
-                "sub"
+                nameAttributeKey
         );
     }
 }
