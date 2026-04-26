@@ -12,12 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import org.mockito.Mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -60,6 +63,10 @@ class MatchServiceTest {
         matchService = new MatchService(
                 helpRequestRepository, matchOfferRepository, userRepository,
                 redisTemplate, rabbitPublisher, transactionTemplate, chatService);
+        lenient().doAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(null);
+        }).when(transactionTemplate).execute(any());
     }
 
     @Test
@@ -107,6 +114,69 @@ class MatchServiceTest {
         assertThat(response.id()).isEqualTo(99L);
         assertThat(response.status()).isEqualTo(MatchOfferStatus.PENDING);
         verify(matchOfferRepository, never()).save(any());
+    }
+
+    @Test
+    void 정상_수락_offer_저장됨() {
+        HelpRequest request = buildRequest(1L, 42L, HelpRequestStatus.OPEN);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(matchOfferRepository.findByRequestIdAndGuideId(1L, 10L)).thenReturn(Optional.empty());
+
+        MatchOffer savedOffer = buildOffer(5L, 1L, 10L, MatchOfferStatus.PENDING);
+        when(matchOfferRepository.save(any(MatchOffer.class))).thenReturn(savedOffer);
+        when(userRepository.findById(10L)).thenReturn(Optional.empty());
+
+        MatchOfferResponse response = matchService.accept(1L, 10L, new AcceptRequest(null));
+
+        assertThat(response.status()).isEqualTo(MatchOfferStatus.PENDING);
+        assertThat(response.guideId()).isEqualTo(10L);
+        assertThat(response.id()).isEqualTo(5L);
+        verify(matchOfferRepository).save(any(MatchOffer.class));
+    }
+
+    @Test
+    void 멱등_동일_가이드_재호출_기존_offer_반환() {
+        HelpRequest request = buildRequest(1L, 42L, HelpRequestStatus.OPEN);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+
+        MatchOffer existing = buildOffer(99L, 1L, 10L, MatchOfferStatus.PENDING);
+        when(matchOfferRepository.findByRequestIdAndGuideId(1L, 10L)).thenReturn(Optional.of(existing));
+        when(userRepository.findById(10L)).thenReturn(Optional.empty());
+
+        MatchOfferResponse response = matchService.accept(1L, 10L, new AcceptRequest("Hello"));
+
+        assertThat(response.id()).isEqualTo(99L);
+        assertThat(response.status()).isEqualTo(MatchOfferStatus.PENDING);
+        verify(matchOfferRepository, never()).save(any());
+    }
+
+    @Test
+    void 예외_OPEN_아닌_요청_수락_불가() {
+        HelpRequest request = buildRequest(1L, 42L, HelpRequestStatus.MATCHED);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> matchService.accept(1L, 10L, new AcceptRequest(null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(matchOfferRepository, never()).save(any());
+    }
+
+    @Test
+    void accept_동시_수락_중복키_예외_시_재조회_반환() {
+        HelpRequest request = buildRequest(1L, 42L, HelpRequestStatus.OPEN);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(matchOfferRepository.findByRequestIdAndGuideId(1L, 10L))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(buildOffer(7L, 1L, 10L, MatchOfferStatus.PENDING)));
+        when(matchOfferRepository.save(any(MatchOffer.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate key"));
+        when(userRepository.findById(10L)).thenReturn(Optional.empty());
+
+        MatchOfferResponse response = matchService.accept(1L, 10L, new AcceptRequest(null));
+
+        assertThat(response.id()).isEqualTo(7L);
     }
 
     @Test

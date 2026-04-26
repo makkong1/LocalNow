@@ -4,10 +4,12 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
@@ -56,7 +58,6 @@ public class MatchService {
     private final TransactionTemplate transactionTemplate;
     private final ChatService chatService;
 
-    @Transactional(readOnly = true)
     public MatchOfferResponse accept(
             @NonNull Long requestId, @NonNull Long guideId, @Nullable AcceptRequest req) {
         HelpRequest request = helpRequestRepository.findById(requestId)
@@ -67,25 +68,35 @@ public class MatchService {
                     ErrorCode.REQUEST_NOT_OPEN.getDefaultMessage());
         }
 
-        return matchOfferRepository.findByRequestIdAndGuideId(requestId, guideId)
-                .map(existing -> {
-                    User guide = userRepository.findById(guideId).orElse(null);
-                    return toResponse(existing, guide);
-                })
-                .orElseGet(() -> {
-                    MatchOffer offer = new MatchOffer();
-                    offer.setRequestId(requestId);
-                    offer.setGuideId(guideId);
-                    offer.setStatus(MatchOfferStatus.PENDING);
-                    offer.setMessage(req != null ? req.message() : null);
-                    MatchOffer saved = matchOfferRepository.save(offer);
+        Optional<MatchOffer> existing = matchOfferRepository.findByRequestIdAndGuideId(requestId, guideId);
+        if (existing.isPresent()) {
+            User guide = userRepository.findById(guideId).orElse(null);
+            return toResponse(existing.get(), guide);
+        }
 
-                    publishAfterCommit("match.offer.accepted",
-                            Map.of("requestId", requestId, "guideId", guideId));
+        try {
+            return transactionTemplate.execute(status -> {
+                MatchOffer offer = new MatchOffer();
+                offer.setRequestId(requestId);
+                offer.setGuideId(guideId);
+                offer.setStatus(MatchOfferStatus.PENDING);
+                offer.setMessage(req != null ? req.message() : null);
+                MatchOffer saved = matchOfferRepository.save(offer);
 
-                    User guide = userRepository.findById(guideId).orElse(null);
-                    return toResponse(saved, guide);
-                });
+                publishAfterCommit("match.offer.accepted",
+                        Map.of("requestId", requestId, "guideId", guideId));
+
+                User guide = userRepository.findById(guideId).orElse(null);
+                return toResponse(saved, guide);
+            });
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청이 먼저 INSERT 완료 → sub-tx 롤백 후 재조회
+            return matchOfferRepository.findByRequestIdAndGuideId(requestId, guideId)
+                    .map(dup -> toResponse(dup, userRepository.findById(guideId).orElse(null)))
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            "Unexpected accept state after duplicate key"));
+        }
     }
 
     public MatchOfferResponse confirm(

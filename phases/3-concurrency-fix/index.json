@@ -2,8 +2,23 @@
   "project": "LocalNow",
   "phase": "3-concurrency-fix",
   "steps": [
-    { "step": 0, "name": "accept-idempotent", "status": "pending" },
-    { "step": 1, "name": "exception-handler-payment", "status": "pending" },
-    { "step": 2, "name": "review-rating-atomic", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "accept-idempotent",
+      "status": "completed",
+      "started_at": "2026-04-26T19:56:36+0900",
+      "summary": "accept readOnly 제거 + TransactionTemplate 멱등 처리(DataIntegrityViolationException catch+재조회) + 단위테스트 3종 + 동시성 IT(동시_수락_같은_가이드_멱등) 추가"
+    },
+    {
+      "step": 1,
+      "name": "exception-handler-payment",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "review-rating-atomic",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-04-26T19:56:36+0900"
 }
