@@ -13,11 +13,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.Mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.infra.pg.PaymentGateway;
@@ -46,6 +51,8 @@ class PaymentServiceTest {
     MatchOfferRepository matchOfferRepository;
     @Mock
     PaymentGateway paymentGateway;
+    @Mock
+    TransactionTemplate transactionTemplate;
 
     private PaymentService paymentService;
 
@@ -53,7 +60,11 @@ class PaymentServiceTest {
     void setUp() {
         paymentService = new PaymentService(
                 paymentIntentRepository, helpRequestRepository,
-                matchOfferRepository, paymentGateway);
+                matchOfferRepository, paymentGateway, transactionTemplate);
+        lenient().doAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(null);
+        }).when(transactionTemplate).execute(any());
     }
 
     @Test
@@ -93,6 +104,36 @@ class PaymentServiceTest {
         assertThat(response.status()).isEqualTo(PaymentStatus.AUTHORIZED);
         assertThat(response.amountKrw()).isEqualTo(10000L);
         verify(paymentGateway, never()).authorize(anyLong(), anyString());
+    }
+
+    @Test
+    void 동시_createIntent_DataIntegrityViolation_시_기존_intent_반환() {
+        HelpRequest request = buildRequest(1L, 10L, HelpRequestStatus.MATCHED, RequestType.GUIDE, 10000L);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+        // 첫 번째 조회는 miss (두 스레드가 동시에 miss)
+        when(paymentIntentRepository.findByIdempotencyKey("payment:1")).thenReturn(Optional.empty());
+
+        MatchOffer offer = new MatchOffer();
+        offer.setGuideId(20L);
+        offer.setStatus(MatchOfferStatus.CONFIRMED);
+        when(matchOfferRepository.findByRequestId(1L)).thenReturn(List.of(offer));
+        when(paymentGateway.authorize(anyLong(), anyString()))
+                .thenReturn(new PaymentGateway.AuthResult("auth-123", true));
+
+        PaymentIntent winner = buildIntent(99L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.AUTHORIZED);
+        // save 시 UNIQUE 위반 → DataIntegrityViolationException
+        when(paymentIntentRepository.save(any())).thenThrow(new DataIntegrityViolationException("unique key"));
+        // catch 블록에서 재조회 → 먼저 저장된 intent 반환
+        when(paymentIntentRepository.findByIdempotencyKey("payment:1"))
+                .thenReturn(Optional.empty())   // 첫 miss
+                .thenReturn(Optional.of(winner)); // catch 블록 재조회
+
+        PaymentIntentResponse response = paymentService.createIntent(10L,
+                new CreatePaymentIntentRequest(1L));
+
+        assertThat(response.amountKrw()).isEqualTo(10000L);
+        verify(paymentGateway, times(1)).authorize(anyLong(), anyString());
+        verify(paymentIntentRepository, times(1)).save(any());
     }
 
     @Test

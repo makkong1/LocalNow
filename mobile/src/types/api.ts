@@ -11,6 +11,7 @@ export type ErrorCode =
   | 'PAYMENT_INVALID_STATE'
   | 'RATE_LIMITED'
   | 'NOT_FOUND'
+  | 'OPTIMISTIC_LOCK_CONFLICT'
   | 'INTERNAL_ERROR';
 
 export interface FieldError {

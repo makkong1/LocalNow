@@ -1,9 +1,11 @@
 package com.localnow.payment.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.common.ErrorCode;
@@ -38,8 +40,8 @@ public class PaymentService {
     private final HelpRequestRepository helpRequestRepository;
     private final MatchOfferRepository matchOfferRepository;
     private final PaymentGateway paymentGateway;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     public PaymentIntentResponse createIntent(
             @NonNull Long travelerId, @NonNull CreatePaymentIntentRequest req) {
         Long requestId = req.requestId();
@@ -57,42 +59,51 @@ public class PaymentService {
         }
 
         String idempotencyKey = "payment:" + requestId;
-        return paymentIntentRepository.findByIdempotencyKey(idempotencyKey)
-                .map(this::toResponse)
-                .orElseGet(() -> {
-                    Long guideId = matchOfferRepository.findByRequestId(requestId).stream()
-                            .filter(o -> o.getStatus() == MatchOfferStatus.CONFIRMED)
-                            .map(MatchOffer::getGuideId)
-                            .findFirst()
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                    "Confirmed offer not found"));
+        var existing = paymentIntentRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return toResponse(existing.get());
+        }
 
-                    long amountKrw = request.getBudgetKrw();
-                    long feeRate = request.getRequestType() == RequestType.EMERGENCY
-                            ? FEE_RATE_EMERGENCY_NUM
-                            : FEE_RATE_STANDARD_NUM;
-                    long platformFeeKrw = (amountKrw * feeRate + FEE_RATE_DENOM / 2) / FEE_RATE_DENOM;
-                    long guidePayout = amountKrw - platformFeeKrw;
+        Long guideId = matchOfferRepository.findByRequestId(requestId).stream()
+                .filter(o -> o.getStatus() == MatchOfferStatus.CONFIRMED)
+                .map(MatchOffer::getGuideId)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Confirmed offer not found"));
 
-                    PaymentGateway.AuthResult auth = paymentGateway.authorize(amountKrw, idempotencyKey);
-                    if (!auth.success()) {
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                "Payment authorization failed");
-                    }
+        long amountKrw = request.getBudgetKrw();
+        long feeRate = request.getRequestType() == RequestType.EMERGENCY
+                ? FEE_RATE_EMERGENCY_NUM
+                : FEE_RATE_STANDARD_NUM;
+        long platformFeeKrw = (amountKrw * feeRate + FEE_RATE_DENOM / 2) / FEE_RATE_DENOM;
+        long guidePayout = amountKrw - platformFeeKrw;
 
-                    PaymentIntent intent = new PaymentIntent();
-                    intent.setRequestId(requestId);
-                    intent.setPayerId(travelerId);
-                    intent.setPayeeId(guideId);
-                    intent.setAmountKrw(amountKrw);
-                    intent.setPlatformFeeKrw(platformFeeKrw);
-                    intent.setGuidePayout(guidePayout);
-                    intent.setStatus(PaymentStatus.AUTHORIZED);
-                    intent.setAuthorizationId(auth.authorizationId());
-                    intent.setIdempotencyKey(idempotencyKey);
+        PaymentGateway.AuthResult auth = paymentGateway.authorize(amountKrw, idempotencyKey);
+        if (!auth.success()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Payment authorization failed");
+        }
 
-                    return toResponse(paymentIntentRepository.save(intent));
-                });
+        PaymentIntent intent = new PaymentIntent();
+        intent.setRequestId(requestId);
+        intent.setPayerId(travelerId);
+        intent.setPayeeId(guideId);
+        intent.setAmountKrw(amountKrw);
+        intent.setPlatformFeeKrw(platformFeeKrw);
+        intent.setGuidePayout(guidePayout);
+        intent.setStatus(PaymentStatus.AUTHORIZED);
+        intent.setAuthorizationId(auth.authorizationId());
+        intent.setIdempotencyKey(idempotencyKey);
+
+        try {
+            return transactionTemplate.execute(status -> toResponse(paymentIntentRepository.save(intent)));
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청이 먼저 INSERT 완료 → sub-tx 롤백 후 재조회
+            return paymentIntentRepository.findByIdempotencyKey(idempotencyKey)
+                    .map(this::toResponse)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected payment intent state"));
+        }
     }
 
     @Transactional

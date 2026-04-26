@@ -59,6 +59,7 @@ LocalNow 백엔드의 단일 공식 외부 계약 문서. 소비자는 (1) Next.
 | `PAYMENT_INVALID_STATE` | 409 | 결제 상태 머신 위반 |
 | `RATE_LIMITED` | 429 | 호출 제한 |
 | `NOT_FOUND` | 404 | 존재하지 않는 정적 리소스 또는 라우트 |
+| `OPTIMISTIC_LOCK_CONFLICT` | 409 | 낙관적 락 충돌, 재조회 후 재시도 필요 |
 | `INTERNAL_ERROR` | 500 | 기타 서버 오류 (로그에 stack, 응답에는 코드만) |
 
 ## 엔드포인트 목록
