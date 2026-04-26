@@ -14,7 +14,8 @@
     },
     {
       "dir": "3-concurrency-fix",
-      "status": "pending"
+      "status": "error",
+      "failed_at": "2026-04-26T20:07:41+0900"
     }
   ]
 }
