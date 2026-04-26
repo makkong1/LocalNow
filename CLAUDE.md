@@ -61,7 +61,7 @@ localNow/
 - CRITICAL: 백엔드 API 를 직접 호출하는 단일 `mobile/src/lib/api-client.ts` 를 사용한다. 컴포넌트에서 `fetch`/`axios` 를 직접 호출하지 않는다.
 - CRITICAL: 백엔드 베이스 URL(`EXPO_PUBLIC_API_BASE_URL`)은 `.env.local`(gitignore)에서만 읽는다. 코드에 하드코딩하지 않는다.
 - CRITICAL: API 응답 타입은 `mobile/src/types/api.ts` 에서만 정의한다. `docs/API_CONVENTIONS.md` 계약과 1:1 대응. 컴포넌트 안에서 임시 인터페이스 재정의 금지.
-- CRITICAL: 외부 서비스(실 PG, 번역 API, OAuth) 실연동은 이 phase 에서 금지한다. 인터페이스만 만들고 Mock 구현으로 대체한다.
+- CRITICAL: **실제 결제 PG**(가맹점 연동·실 승인/캡처)만 이 phase에서 연동하지 않는다. `PaymentGateway`는 Mock 구현을 유지한다. **OAuth·번역·그 밖의 외부 API**는 시크릿·`docs/` 규약·ADR을 지키는 범위에서 실연동을 허용한다.
 - CRITICAL: `EXPO_PUBLIC_*` 값은 앱 번들에 노출된다. 백엔드 URL 같은 공개 설정만 넣고 JWT, API key, secret은 절대 넣지 않는다.
 - 화면 단위 컴포넌트는 `mobile/src/screens/` 하위에 둔다. 재사용 UI 는 `mobile/src/components/` 하위에 둔다.
 - 서버 상태는 TanStack Query. 클라이언트 상태는 `useState/useReducer`. 전역 상태 라이브러리(Zustand/Redux/Jotai) 도입 금지.
@@ -70,7 +70,7 @@ localNow/
 ## 개발 프로세스
 
 - CRITICAL: 새 기능 구현 시 테스트를 먼저 작성(TDD)하고, 통과하는 최소 구현을 작성한다. 백엔드 서비스는 단위 테스트, 외부 시스템 연동은 Testcontainers, 모바일 핵심 컴포넌트는 RNTL.
-- CRITICAL: 외부 서비스(실 PG, 번역, 지도 API 키, OAuth) 실연동 금지. 인터페이스만 만들고 Mock 구현으로 대체. 필요 시점에 ADR 추가 후 도입.
+- CRITICAL: **실 PG(결제) 실연동만** 금지 — `PaymentGateway` Mock 유지. OAuth, 번역, 기타 외부 연동은 허용(다만 유료 지도 등은 `docs/ADR.md` 기존 결정 준수). 영향이 큰 신규 외부 의존은 ADR로 근거를 남긴다.
 - 커밋 메시지는 conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`). 스코프에는 `backend` / `mobile` / `web` / `docs` 중 하나를 권장.
 - 매 step 완료 후 아래 "명령어" 섹션의 검증을 반드시 통과시킨다.
 

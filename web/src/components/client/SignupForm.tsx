@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { ApiError, ApiResponse, UserRole } from '@/types/api';
 import ApiErrorDisplay from './ApiErrorDisplay';
 import GoogleSignInButton from './GoogleSignInButton';
+import GitHubSignInButton from './GitHubSignInButton';
 
 export default function SignupForm() {
   const router = useRouter();
@@ -57,7 +58,8 @@ export default function SignupForm() {
   return (
     <div className="space-y-6">
       <GoogleSignInButton />
-      <p className="text-xs text-center text-neutral-500">Google은 여행자로 가입·연동됩니다.</p>
+      <GitHubSignInButton />
+      <p className="text-xs text-center text-neutral-500">Google·GitHub는 여행자로 가입·연동됩니다.</p>
       <div className="relative">
         <div className="absolute inset-0 flex items-center" aria-hidden>
           <div className="w-full border-t border-neutral-800" />
@@ -87,11 +89,11 @@ export default function SignupForm() {
           value={form.password}
           onChange={handleChange}
           required
-          minLength={8}
+          minLength={4}
           className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500"
           placeholder="••••••••"
         />
-        <p className="mt-1 text-xs text-neutral-500">8자 이상 입력하세요.</p>
+        <p className="mt-1 text-xs text-neutral-500">4자 이상 (프로덕션에서는 강한 정책 권장)</p>
       </div>
       <div>
         <label className="block text-sm text-neutral-400 mb-1">이름</label>
