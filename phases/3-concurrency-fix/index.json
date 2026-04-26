@@ -12,7 +12,8 @@
     {
       "step": 1,
       "name": "exception-handler-payment",
-      "status": "pending"
+      "status": "pending",
+      "started_at": "2026-04-26T20:01:53+0900"
     },
     {
       "step": 2,
