@@ -23,16 +23,19 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
+    private final LocalNowOidcUserService localNowOidcUserService;
     private final LocalNowOAuth2UserService localNowOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     public SecurityConfig(
             JwtProvider jwtProvider,
+            LocalNowOidcUserService localNowOidcUserService,
             LocalNowOAuth2UserService localNowOAuth2UserService,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
             OAuth2LoginFailureHandler oAuth2LoginFailureHandler) {
         this.jwtProvider = jwtProvider;
+        this.localNowOidcUserService = localNowOidcUserService;
         this.localNowOAuth2UserService = localNowOAuth2UserService;
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
         this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
@@ -47,10 +50,13 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityPathPatterns.UNAUTHENTICATED).permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(o -> o
-                        .userInfoEndpoint(u -> u.userService(localNowOAuth2UserService))
+                        .userInfoEndpoint(u -> u
+                                .oidcUserService(localNowOidcUserService)
+                                .userService(localNowOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler)
                 )

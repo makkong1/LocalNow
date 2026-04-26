@@ -12,6 +12,8 @@ import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useMyRequests, useCreateRequest } from '../hooks/useRequests';
 import { useOffers, useConfirmGuide } from '../hooks/useMatches';
 import { useChatRoom } from '../hooks/useChat';
+import { usePaymentIntent } from '../hooks/usePayment';
+import type { PaymentIntentResponse } from '../types/api';
 import LocationMap, { DEFAULT_LAT, DEFAULT_LNG } from '../components/LocationMap';
 import RequestForm from '../components/RequestForm';
 import GuideOfferCard from '../components/GuideOfferCard';
@@ -92,15 +94,46 @@ function OpenView({ request }: { request: HelpRequestResponse }) {
   );
 }
 
+function paymentCta(intent: PaymentIntentResponse | null | undefined) {
+  if (intent == null) {
+    return { label: '결제하기', disabled: false };
+  }
+  switch (intent.status) {
+    case 'CAPTURED':
+      return { label: '결제 완료 ✓', disabled: true };
+    case 'AUTHORIZED':
+      return { label: '결제 대기중', disabled: false };
+    case 'REFUNDED':
+      return { label: '환불됨', disabled: true };
+    case 'FAILED':
+      return { label: '결제 실패 — 다시 시도', disabled: false };
+    default:
+      return { label: '결제하기', disabled: false };
+  }
+}
+
 // Sub-component: MATCHED / IN_PROGRESS 상태 (채팅 + 결제)
 function MatchedView({ request }: { request: HelpRequestResponse }) {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { data: room } = useChatRoom(request.id);
+  const { data: offers } = useOffers(request.id);
+  const { data: intent } = usePaymentIntent(request.id);
+
+  const guideId =
+    room?.guideId ?? offers?.find((o) => o.status === 'CONFIRMED')?.guideId ?? undefined;
+
+  const pay = paymentCta(intent);
 
   function goToChat() {
     if (room) {
       navigation.navigate('ChatRoom', { roomId: room.id, requestId: request.id });
     }
+  }
+
+  function goToPayment() {
+    if (guideId == null) return;
+    if (pay.disabled) return;
+    navigation.navigate('Payment', { requestId: request.id, guideId });
   }
 
   return (
@@ -115,9 +148,43 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
       >
         <Text style={styles.secondaryButtonText}>채팅하기</Text>
       </TouchableOpacity>
-      {/* step 6에서 결제 네비게이션 구현 */}
-      <TouchableOpacity testID="go-to-payment-button" style={styles.primaryButton}>
-        <Text style={styles.primaryButtonText}>결제하기 (Mock)</Text>
+      <TouchableOpacity
+        testID="go-to-payment-button"
+        style={[styles.primaryButton, pay.disabled && styles.primaryButtonDisabled]}
+        onPress={goToPayment}
+        disabled={pay.disabled || guideId == null}
+      >
+        <Text style={styles.primaryButtonText}>
+          {guideId == null ? '가이드 정보를 불러오는 중...' : pay.label}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+// COMPLETED: 리뷰 (guideId — 채팅방 또는 확정 오퍼)
+function CompletedView({ request }: { request: HelpRequestResponse }) {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
+  const { data: room } = useChatRoom(request.id);
+  const { data: offers } = useOffers(request.id);
+  const guideId =
+    room?.guideId ?? offers?.find((o) => o.status === 'CONFIRMED')?.guideId ?? undefined;
+
+  return (
+    <ScrollView style={styles.scrollContainer}>
+      <RequestCard request={request} />
+      <Text style={styles.sectionLabel}>서비스가 완료되었습니다</Text>
+      <TouchableOpacity
+        testID="go-to-review-button"
+        style={[styles.primaryButton, guideId == null && styles.primaryButtonDisabled]}
+        onPress={() => {
+          if (guideId != null) {
+            navigation.navigate('Review', { requestId: request.id, guideId });
+          }
+        }}
+        disabled={guideId == null}
+      >
+        <Text style={styles.primaryButtonText}>리뷰 작성하기</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -199,18 +266,9 @@ export default function TravelerScreen() {
     return <MatchedView request={activeRequest} />;
   }
 
-  // COMPLETED → 리뷰 이동
+  // COMPLETED → 리뷰
   if (activeRequest.status === 'COMPLETED') {
-    return (
-      <ScrollView style={styles.scrollContainer}>
-        <RequestCard request={activeRequest} />
-        <Text style={styles.sectionLabel}>서비스가 완료되었습니다</Text>
-        {/* step 6에서 리뷰 네비게이션 구현 */}
-        <TouchableOpacity testID="go-to-review-button" style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>리뷰 작성하기</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
+    return <CompletedView request={activeRequest} />;
   }
 
   // CANCELLED 또는 기타
@@ -263,6 +321,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  primaryButtonDisabled: {
+    backgroundColor: '#404040',
   },
   primaryButtonText: {
     color: '#000',

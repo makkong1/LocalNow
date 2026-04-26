@@ -61,6 +61,23 @@
 | 인증       | HttpOnly 쿠키 + BFF 프록시 (Route Handler)                     |
 | 테스트     | Vitest + React Testing Library, Playwright (핵심 시나리오 1개) |
 
+## 백엔드 JPA 엔티티 (`backend/…/domain/`)
+
+MySQL + JPA. 관계는 FK 대부분을 **Long id**로만 들고, 필요 시 조인은 서비스/리포지토리 쿼리로 처리한다.
+
+| 엔티티 | DB 테이블 | 역할 |
+| ------ | ---------- | ---- |
+| `User` | `users` | 이메일·이름·`UserRole`·도시/언어·가이드 평균 별점(`avg_rating`/`rating_count`). 비밀번호 null 이면 OAuth 전용 계정. |
+| `UserOAuthIdentity` | `user_oauth_identities` | 외부 IdP(예: Google) `provider` + `provider_user_id` ↔ 로컬 `user_id` 연결. |
+| `HelpRequest` | `help_requests` | 여행자(`traveler_id`)·위치·요청 유형·예산·`HelpRequestStatus`·`@Version` 낙관적 락. |
+| `MatchOffer` | `match_offers` | 요청(`request_id`)에 대한 가이드(`guide_id`) 제안, `MatchOfferStatus`. |
+| `ChatRoom` | `chat_rooms` | 요청당 1방(`request_id` unique)·여행자/가이드 id. |
+| `ChatMessage` | `chat_messages` | 방·발신자·본문·`client_message_id`(멱등). |
+| `PaymentIntent` | `payment_intents` | 요청당 1건(`request_id` unique)·payer/payee·금액·수수료/가이드 정산·`PaymentStatus`·Mock PG id·멱등키. |
+| `Review` | `reviews` | 요청당 1건(`request_id` unique)·리뷰어/리뷰이·별점·코멘트. |
+
+**열거형(도메인, 테이블 컬럼이 아님)** — `UserRole`, `RequestType`, `HelpRequestStatus`, `MatchOfferStatus`, `PaymentStatus`, `OAuth2ProviderType` 등. 스키마는 Flyway `backend/src/main/resources/db/migration/` 에 정의.
+
 ## Phase 현황
 
 | Phase        | 이름             | 상태       | 내용                                          |
@@ -122,6 +139,7 @@ cd mobile && npx expo start            # Metro 서버 → Expo Go 앱 또는 시
 # 4. 웹 참조 구현 (선택)
 cd web && npm install
 cd web && npm run dev                  # http://localhost:3000
+# 관리자 읽기 전용 대시보드: http://localhost:3000/admin (시드 계정 `docs/ADR-014` 참고)
 
 # 정리
 docker compose down -v

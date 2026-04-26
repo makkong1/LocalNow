@@ -9,6 +9,11 @@ export function usePaymentIntent(requestId: number) {
       const res = await apiFetch<PaymentIntentResponse>(`/payments/${requestId}`);
       if (!res.success) {
         if (res.error?.code === 'REQUEST_NOT_FOUND') return null;
+        // Spring NOT_FOUND 는 ApiResponse code 가 INTERNAL_ERROR 로 올 수 있음
+        const msg = res.error?.message ?? '';
+        if (msg.toLowerCase().includes('not found') || msg.includes('Payment intent not found')) {
+          return null;
+        }
         throw res.error;
       }
       return res.data;

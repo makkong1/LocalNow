@@ -30,7 +30,7 @@ export interface ApiError {
   fields: FieldError[] | null;
 }
 
-export type UserRole = 'TRAVELER' | 'GUIDE';
+export type UserRole = 'TRAVELER' | 'GUIDE' | 'ADMIN';
 
 // Auth
 export interface AuthResponse {

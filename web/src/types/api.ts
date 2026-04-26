@@ -27,7 +27,7 @@ export type ErrorCode =
   | 'RATE_LIMITED'
   | 'INTERNAL_ERROR';
 
-export type UserRole = 'TRAVELER' | 'GUIDE';
+export type UserRole = 'TRAVELER' | 'GUIDE' | 'ADMIN';
 export type RequestType = 'GUIDE' | 'TRANSLATION' | 'FOOD' | 'EMERGENCY';
 export type HelpRequestStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'AUTHORIZED' | 'CAPTURED' | 'REFUNDED' | 'FAILED';
@@ -110,6 +110,15 @@ export interface ReviewResponse {
   rating: number;
   comment: string | null;
   createdAt: string;
+}
+
+export interface AdminSummaryResponse {
+  userCount: number;
+  helpRequestsOpen: number;
+  helpRequestsMatched: number;
+  helpRequestsInProgress: number;
+  helpRequestsCompleted: number;
+  helpRequestsCancelled: number;
 }
 
 export interface PageResponse<T> {

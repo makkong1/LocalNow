@@ -6,6 +6,8 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 import TravelerScreen from '../screens/TravelerScreen';
 import GuideScreen from '../screens/GuideScreen';
 import ChatScreen from '../screens/ChatScreen';
+import PaymentScreen from '../screens/PaymentScreen';
+import ReviewScreen from '../screens/ReviewScreen';
 import { useAuth } from '../hooks/useAuth';
 import { useRealtime } from '../hooks/useRealtime';
 import { useMyRequests } from '../hooks/useRequests';
@@ -19,6 +21,8 @@ export type AppTabParamList = {
 export type AppStackParamList = {
   MainTabs: NavigatorScreenParams<AppTabParamList>;
   ChatRoom: { roomId: number; requestId: number };
+  Payment: { requestId: number; guideId: number };
+  Review: { requestId: number; guideId: number };
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -91,6 +95,8 @@ function AppContent() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="ChatRoom" component={ChatScreen} />
+        <Stack.Screen name="Payment" component={PaymentScreen} />
+        <Stack.Screen name="Review" component={ReviewScreen} />
       </Stack.Navigator>
     </View>
   );

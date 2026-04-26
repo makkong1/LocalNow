@@ -21,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.localnow.common.ErrorCode;
 import com.localnow.config.security.JwtProvider;
 import com.localnow.user.domain.User;
 import com.localnow.user.domain.UserRole;
@@ -80,6 +81,21 @@ class UserServiceTest {
         AuthResponse result = userService.login(new LoginRequest("test@test.com", rawPassword));
 
         assertThat(result.accessToken()).isEqualTo("mock-token");
+    }
+
+    @Test
+    void register_adminRole_forbidden() {
+        SignupRequest req = new SignupRequest(
+                "admin@test.com", "password123", "Nope",
+                UserRole.ADMIN, null, null);
+
+        assertThatThrownBy(() -> userService.register(req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> {
+                    var ex = (ResponseStatusException) e;
+                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                    assertThat(ex.getReason()).isEqualTo(ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                });
     }
 
     @Test

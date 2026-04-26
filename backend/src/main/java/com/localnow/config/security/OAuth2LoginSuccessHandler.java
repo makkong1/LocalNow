@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -22,10 +24,15 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(OAuth2LoginSuccessHandler.class);
+
     private final JwtProvider jwtProvider;
 
     @Value("${app.oauth2.success-redirect}")
     private String successRedirect;
+
+    @Value("${app.oauth2.failure-redirect}")
+    private String failureRedirect;
 
     public OAuth2LoginSuccessHandler(JwtProvider jwtProvider) {
         this.jwtProvider = jwtProvider;
@@ -40,9 +47,18 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         Object uid = oAuth2User.getAttribute(OAuth2UserResponseMapper.ATTR_LOCAL_USER_ID);
         Object role = oAuth2User.getAttribute(OAuth2UserResponseMapper.ATTR_LOCAL_ROLE);
         if (uid == null || role == null) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Invalid OAuth2 principal");
+            log.error("OAuth2 principal missing local attributes: uid={} role={} attrs={}",
+                    uid, role, oAuth2User.getAttributes().keySet());
+            // sendError(500) 는 /error 로 ERROR dispatch → 인증 302 루프를 피하고 실패 콜백으로 보낸다
+            String base = StringUtils.hasText(failureRedirect)
+                    ? failureRedirect
+                    : "http://localhost:3000/oauth/callback?error=1";
+            String enc = URLEncoder.encode("invalid_oauth2_principal", StandardCharsets.UTF_8);
+            String sep = base.contains("?") ? "&" : "?";
+            getRedirectStrategy().sendRedirect(request, response, base + sep + "oauth2Error=" + enc);
             return;
         }
+        log.debug("OAuth2 login success: userId={} role={}", uid, role);
         String token = jwtProvider.generateToken((Long) uid, (String) role);
         String enc = URLEncoder.encode(token, StandardCharsets.UTF_8);
         String base = StringUtils.hasText(successRedirect) ? successRedirect : "http://localhost:3000/oauth/callback";

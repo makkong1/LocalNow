@@ -6,7 +6,11 @@
     },
     {
       "dir": "1-mobile-app",
-      "status": "pending"
+      "status": "completed"
+    },
+    {
+      "dir": "2-admin-ui",
+      "status": "completed"
     }
   ]
 }

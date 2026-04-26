@@ -15,7 +15,8 @@ public final class SecurityPathPatterns {
             "/ws/**",
             "/ws-native/**",
             "/oauth2/**",
-            "/login/oauth2/**"
+            "/login/oauth2/**",
+            "/error"
     };
 
     private SecurityPathPatterns() {}

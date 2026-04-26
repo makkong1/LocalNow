@@ -1,6 +1,8 @@
 package com.localnow.config.security;
 
 import com.localnow.user.service.UserOAuth2AccountService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LocalNowOAuth2UserService extends DefaultOAuth2UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(LocalNowOAuth2UserService.class);
 
     private final UserOAuth2AccountService userOAuth2AccountService;
 
@@ -35,7 +39,15 @@ public class LocalNowOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("invalid_user", "Google user must have sub and email", null));
         }
-        var user = userOAuth2AccountService.findOrCreateFromGoogle(sub, email, name);
-        return OAuth2UserResponseMapper.toOAuth2UserWithLocalAttributes(oAuth2User, user);
+        try {
+            var user = userOAuth2AccountService.findOrCreateFromGoogle(sub, email, name);
+            return OAuth2UserResponseMapper.toOAuth2UserWithLocalAttributes(oAuth2User, user);
+        } catch (OAuth2AuthenticationException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to find or create local user for Google sub={} email={}", sub, email, e);
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("user_service_error", "Internal error while processing Google login", null));
+        }
     }
 }

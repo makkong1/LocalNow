@@ -53,7 +53,10 @@
     {
       "step": 6,
       "name": "payment-review",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-26T00:32:40+0900",
+      "summary": "AppNavigator에 Payment/Review Stack 등록, TravelerScreen MATCHED·COMPLETED에서 guideId(채팅방·확정오퍼)로 Payment·Review 이동·결제상태 CTA, usePaymentIntent NOT_FOUND(백엔드 메시지) 대응. PaymentScreen/ReviewScreen은 Mock 결제+리뷰 플로. npm test 40, lint 0, backend ./gradlew check 통과.",
+      "completed_at": "2026-04-26T01:35:00+0900"
     }
   ],
   "created_at": "2026-04-25T11:42:34+0900"
