@@ -1,0 +1,9 @@
+{
+  "project": "LocalNow",
+  "phase": "3-concurrency-fix",
+  "steps": [
+    { "step": 0, "name": "accept-idempotent", "status": "pending" },
+    { "step": 1, "name": "exception-handler-payment", "status": "pending" },
+    { "step": 2, "name": "review-rating-atomic", "status": "pending" }
+  ]
+}
