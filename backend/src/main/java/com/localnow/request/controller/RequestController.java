@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.localnow.common.ApiResponse;
 import com.localnow.common.ErrorCode;
+import static com.localnow.common.security.AuthenticationUserRoles.isGuide;
+import static com.localnow.common.security.AuthenticationUserRoles.isTraveler;
+import static com.localnow.common.security.AuthenticationUserRoles.resolveUserRole;
 import com.localnow.request.dto.CreateRequestRequest;
 import com.localnow.request.dto.HelpRequestPageResponse;
 import com.localnow.request.dto.HelpRequestResponse;
@@ -77,25 +80,5 @@ public class RequestController {
         Long userId = (Long) authentication.getPrincipal();
         HelpRequestPageResponse response = requestService.getMyRequests(userId, cursor, size);
         return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    private boolean isTraveler(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_TRAVELER"));
-    }
-
-    private boolean isGuide(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_GUIDE"));
-    }
-
-    private UserRole resolveUserRole(Authentication authentication) {
-        if (isTraveler(authentication)) {
-            return UserRole.TRAVELER;
-        }
-        if (isGuide(authentication)) {
-            return UserRole.GUIDE;
-        }
-        throw new IllegalStateException("Unsupported role in JWT");
     }
 }

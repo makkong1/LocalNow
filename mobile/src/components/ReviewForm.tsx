@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useCreateReview } from '../hooks/useReview';
+import type { ApiError } from '../types/api';
 
 interface ReviewFormProps {
   requestId: number;
@@ -60,7 +61,9 @@ export default function ReviewForm({ requestId, onSubmit }: ReviewFormProps) {
       </TouchableOpacity>
 
       {createReview.isError && (
-        <Text style={styles.errorText}>리뷰 제출에 실패했습니다. 다시 시도해주세요.</Text>
+        <Text testID="review-error-message" style={styles.errorText}>
+          {(createReview.error as ApiError | null)?.message ?? '리뷰 제출에 실패했습니다.'}
+        </Text>
       )}
     </View>
   );

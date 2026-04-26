@@ -42,7 +42,7 @@ export default async function RootLayout({
                 <span className="text-sm text-neutral-400">
                   {profile.name}{' '}
                   <span className="text-xs text-neutral-600">
-                    {profile.role === 'GUIDE' ? '가이드' : '여행자'}
+                    {profile.role === 'GUIDE' ? '가이드' : profile.role === 'ADMIN' ? '관리자' : '여행자'}
                   </span>
                 </span>
                 <LogoutButton />

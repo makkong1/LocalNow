@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.localnow.common.security.AuthenticationUserRoles.isGuide;
+import static com.localnow.common.security.AuthenticationUserRoles.isTraveler;
+import static com.localnow.common.security.AuthenticationUserRoles.resolveUserRole;
+
 import com.localnow.common.ApiResponse;
 import com.localnow.common.ErrorCode;
 import com.localnow.match.dto.AcceptRequest;
@@ -69,25 +73,5 @@ public class MatchController {
         Long userId = (Long) authentication.getPrincipal();
         UserRole role = resolveUserRole(authentication);
         return ResponseEntity.ok(ApiResponse.ok(matchService.getOffers(requestId, userId, role)));
-    }
-
-    private boolean isGuide(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_GUIDE"));
-    }
-
-    private boolean isTraveler(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_TRAVELER"));
-    }
-
-    private UserRole resolveUserRole(Authentication authentication) {
-        if (isTraveler(authentication)) {
-            return UserRole.TRAVELER;
-        }
-        if (isGuide(authentication)) {
-            return UserRole.GUIDE;
-        }
-        throw new IllegalStateException("Unsupported role in JWT");
     }
 }

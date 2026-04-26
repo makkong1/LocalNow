@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ApiError, ApiResponse, AuthResponse } from '@/types/api';
 import ApiErrorDisplay from './ApiErrorDisplay';
+import GoogleSignInButton from './GoogleSignInButton';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -27,7 +28,10 @@ export default function LoginForm() {
       const data: ApiResponse<AuthResponse> = await res.json();
 
       if (data.success && data.data) {
-        router.push(data.data.role === 'GUIDE' ? '/guide' : '/traveler');
+        const { role } = data.data;
+        if (role === 'GUIDE') router.push('/guide');
+        else if (role === 'ADMIN') router.push('/admin');
+        else router.push('/traveler');
       } else {
         setError(
           data.error ?? {
@@ -45,6 +49,16 @@ export default function LoginForm() {
   }
 
   return (
+    <div className="space-y-6">
+      <GoogleSignInButton />
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
+          <div className="w-full border-t border-neutral-800" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase tracking-wide text-neutral-500">
+          <span className="bg-[#141414] px-2">또는 이메일</span>
+        </div>
+      </div>
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm text-neutral-400 mb-1">이메일</label>
@@ -83,5 +97,6 @@ export default function LoginForm() {
         </a>
       </p>
     </form>
+    </div>
   );
 }

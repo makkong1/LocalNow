@@ -77,3 +77,10 @@ MVP 속도 최우선. 외부 의존성은 "정말 매칭/채팅/결제가 동작
 **결정**: STOMP over WebSocket 연결 시 SockJS 폴백을 사용하지 않는다. `@stomp/stompjs` 의 Native WebSocket 모드(`webSocketFactory: () => new WebSocket(url)`)로 백엔드에 직접 연결한다.
 **이유**: SockJS는 브라우저 환경에서 WebSocket을 지원하지 않는 구형 브라우저를 위한 폴백이다. React Native는 표준 WebSocket API를 내장 지원하므로 SockJS가 불필요하다.
 **트레이드오프**: 백엔드 WebSocketConfig에서 SockJS 엔드포인트(`/ws`)와 순수 WebSocket 엔드포인트를 함께 등록해야 한다. 현재 `allowedOrigins("*")`를 사용 중이므로 모바일 연결에 추가 설정 불필요.
+
+### ADR-014: 제한적 웹 관리자 뷰 (읽기 전용 집계)
+**결정**: `UserRole.ADMIN` 과 JWT, 데모 웹의 `/admin` 읽기 전용 대시보드(집계 API `GET /admin/summary`)로 PRD가 가정하던 "운영은 DB 직접" 경로에 **최소 대체**를 둔다. 공개 `/auth/signup` 으로 `ADMIN` 역할을 만드는 것은 서버가 거부한다. 로컬 전용 시드 계정(마이그레이션)으로만 구축.
+**이유**: 포트폴리오·로컬 검증에서 요청/사용자 수를 화면으로 확인하는 비용이 DB 접속보다 낮다. 전사 Admin 제품(감사 로그, 2FA, 승인 워크플로)은 범위 밖으로 남긴다.
+**트레이드오프**: 실서비스 권한·SSO·PII 취급은 이 설계로 충분하지 않다. 신고/환불 등 쓰기 운영은 이후 phase 로 분리한다.
+
+**로컬 시드**: `admin@localnow.test` + 비밀번호 `localnow-admin-2026` (MySQL V9 마이그레이션). 프로덕션에서는 이 계정·해시를 사용하지 말고 회전하라.

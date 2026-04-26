@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ApiError, ApiResponse, UserRole } from '@/types/api';
 import ApiErrorDisplay from './ApiErrorDisplay';
+import GoogleSignInButton from './GoogleSignInButton';
 
 export default function SignupForm() {
   const router = useRouter();
@@ -54,6 +55,17 @@ export default function SignupForm() {
   }
 
   return (
+    <div className="space-y-6">
+      <GoogleSignInButton />
+      <p className="text-xs text-center text-neutral-500">Google은 여행자로 가입·연동됩니다.</p>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
+          <div className="w-full border-t border-neutral-800" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase tracking-wide text-neutral-500">
+          <span className="bg-[#141414] px-2">또는 이메일</span>
+        </div>
+      </div>
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm text-neutral-400 mb-1">이메일</label>
@@ -132,5 +144,6 @@ export default function SignupForm() {
         </a>
       </p>
     </form>
+    </div>
   );
 }

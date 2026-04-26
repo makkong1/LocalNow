@@ -10,7 +10,10 @@ export default async function LoginPage() {
   if (token) {
     const profile = await apiFetch<UserProfileResponse>('/auth/me');
     if (profile.success && profile.data) {
-      redirect(profile.data.role === 'GUIDE' ? '/guide' : '/traveler');
+      const { role } = profile.data;
+      if (role === 'GUIDE') redirect('/guide');
+      if (role === 'ADMIN') redirect('/admin');
+      redirect('/traveler');
     }
   }
 

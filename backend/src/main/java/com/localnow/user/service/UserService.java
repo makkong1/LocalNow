@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.localnow.common.ErrorCode;
 import com.localnow.config.security.JwtProvider;
 import com.localnow.user.domain.User;
+import com.localnow.user.domain.UserRole;
 import com.localnow.user.dto.AuthResponse;
 import com.localnow.user.dto.LoginRequest;
 import com.localnow.user.dto.SignupRequest;
@@ -35,6 +37,9 @@ public class UserService {
 
     @Transactional
     public AuthResponse register(SignupRequest request) {
+        if (request.role() == UserRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }

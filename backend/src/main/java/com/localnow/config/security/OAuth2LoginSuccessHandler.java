@@ -31,6 +31,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.oauth2.success-redirect}")
     private String successRedirect;
 
+    @Value("${app.oauth2.failure-redirect}")
+    private String failureRedirect;
+
     public OAuth2LoginSuccessHandler(JwtProvider jwtProvider) {
         this.jwtProvider = jwtProvider;
     }
@@ -46,7 +49,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         if (uid == null || role == null) {
             log.error("OAuth2 principal missing local attributes: uid={} role={} attrs={}",
                     uid, role, oAuth2User.getAttributes().keySet());
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Invalid OAuth2 principal");
+            // sendError(500) 는 /error 로 ERROR dispatch → 인증 302 루프를 피하고 실패 콜백으로 보낸다
+            String base = StringUtils.hasText(failureRedirect)
+                    ? failureRedirect
+                    : "http://localhost:3000/oauth/callback?error=1";
+            String enc = URLEncoder.encode("invalid_oauth2_principal", StandardCharsets.UTF_8);
+            String sep = base.contains("?") ? "&" : "?";
+            getRedirectStrategy().sendRedirect(request, response, base + sep + "oauth2Error=" + enc);
             return;
         }
         log.debug("OAuth2 login success: userId={} role={}", uid, role);

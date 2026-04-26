@@ -1,0 +1,25 @@
+{
+  "project": "LocalNow",
+  "phase": "2-admin-ui",
+  "steps": [
+    {
+      "step": 0,
+      "name": "admin-adr",
+      "status": "completed",
+      "summary": "ADR-014 추가, PRD MVP 제외 Admin 한 줄을 읽기 전용 예외(ADR)로 갱신"
+    },
+    {
+      "step": 1,
+      "name": "backend-admin-api",
+      "status": "completed",
+      "summary": "UserRole.ADMIN, V9 ENUM+시드, /admin/summary, Security hasRole(ADMIN), 공개가입 ADMIN 거부, AdminControllerTest+UserServiceTest, resolveUserRole(ADMIN) 정합. 전체 check는 Testcontainers 4IT Docker API 이슈로 환경 의존"
+    },
+    {
+      "step": 2,
+      "name": "web-admin-dashboard",
+      "status": "completed",
+      "summary": "web /admin + /api/admin/summary, UserRole+AdminSummaryResponse 타입, login ADMIN→/admin, mobile UserRole+ADMIN, API_CONVENTIONS·README, npm run lint+build 통과"
+    }
+  ],
+  "completed_at": "2026-04-26T12:00:00+0900"
+}

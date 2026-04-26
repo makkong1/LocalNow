@@ -2,6 +2,9 @@
 
 프로젝트 리뷰 문서 모음.
 
+## 인프라 참조
+- `Redis-RabbitMQ.md`: Redis(GEO, 매칭 확정 분산락)와 RabbitMQ(교환/큐, routing key, 발행·STOMP 연계) **코드 기준** 사용 맵.
+
 ## 백엔드 도메인 리뷰 (`도메인/`)
 - `backend-user.md`: 사용자, 인증, 가이드 근무 상태.
 - `backend-request.md`: 도움 요청 생성, 조회, 매칭 디스패치 트리거.

@@ -31,8 +31,12 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(NoResourceFoundException.class)
         public ResponseEntity<ApiResponse<?>> handleNoResource(NoResourceFoundException ex) {
+                if (log.isDebugEnabled()) {
+                        log.debug("No static resource: {}", ex.getResourcePath());
+                }
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR, "Resource not found"));
+                                .body(ApiResponse.fail(ErrorCode.NOT_FOUND,
+                                                ErrorCode.NOT_FOUND.getDefaultMessage()));
         }
 
         @ExceptionHandler(ResponseStatusException.class)
