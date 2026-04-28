@@ -194,3 +194,27 @@ export type StompEvent =
 
 /** @deprecated Use StompEvent */
 export type NotificationPayload = StompEvent;
+
+// Guide active offer (GET /offers/mine)
+export interface GuideActiveOfferResponse {
+  offerId: number;
+  offerStatus: 'PENDING' | 'CONFIRMED';
+  requestId: number;
+  requestType: RequestType;
+  requestStatus: HelpRequestStatus;
+  budgetKrw: number;
+  durationMin: number;
+  description: string;
+  travelerId: number;
+  travelerName: string;
+}
+
+// Chat room list item (GET /chat/rooms)
+export interface ChatRoomSummaryResponse {
+  roomId: number;
+  requestId: number;
+  requestType: RequestType;
+  partnerName: string;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+}
