@@ -45,7 +45,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
         }
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 가입된 이메일입니다.");
         }
 
         User user = new User();
@@ -68,14 +68,17 @@ public class UserService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "이메일 또는 비밀번호가 올바르지 않습니다."));
 
         if (user.getPassword() == null) {
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "This account uses social login (e.g. Google)");
+                    HttpStatus.UNAUTHORIZED,
+                    "이 계정은 소셜 로그인(Google 등)으로 가입되었습니다. 해당 방식으로 로그인해 주세요.");
         }
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
         String token = jwtProvider.generateToken(user.getId(), user.getRole().name());
@@ -84,7 +87,7 @@ public class UserService {
 
     public UserProfileResponse getProfile(@NonNull Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         List<String> languages = (user.getLanguages() != null && !user.getLanguages().isBlank())
                 ? Arrays.asList(user.getLanguages().split(","))

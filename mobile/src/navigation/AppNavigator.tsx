@@ -37,8 +37,14 @@ function RecentChatPlaceholder() {
 }
 
 function MainTabs() {
+  const { role } = useAuth();
+  /** 첫 화면: 여행자는 여행 탭, 가이드는 가이드 탭 (ADMIN 등은 여행 탭 기본) */
+  const initialRouteName: keyof AppTabParamList =
+    role === 'GUIDE' ? 'Guide' : 'Traveler';
+
   return (
     <Tab.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
@@ -46,9 +52,17 @@ function MainTabs() {
         tabBarInactiveTintColor: '#525252',
       }}
     >
-      <Tab.Screen name="Traveler" component={TravelerScreen} />
-      <Tab.Screen name="Guide" component={GuideScreen} />
-      <Tab.Screen name="Chat" component={RecentChatPlaceholder} options={{ title: '채팅' }} />
+      <Tab.Screen
+        name="Traveler"
+        component={TravelerScreen}
+        options={{ tabBarLabel: '여행자' }}
+      />
+      <Tab.Screen name="Guide" component={GuideScreen} options={{ tabBarLabel: '가이드' }} />
+      <Tab.Screen
+        name="Chat"
+        component={RecentChatPlaceholder}
+        options={{ tabBarLabel: '채팅' }}
+      />
     </Tab.Navigator>
   );
 }

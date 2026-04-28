@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,12 +15,17 @@ import { useOffers, useConfirmGuide } from '../hooks/useMatches';
 import { useChatRoom } from '../hooks/useChat';
 import { usePaymentIntent } from '../hooks/usePayment';
 import type { PaymentIntentResponse } from '../types/api';
-import LocationMap, { DEFAULT_LAT, DEFAULT_LNG } from '../components/LocationMap';
+import * as Location from 'expo-location';
+import LocationMap from '../components/LocationMap';
 import RequestForm from '../components/RequestForm';
 import GuideOfferCard from '../components/GuideOfferCard';
 import StatusBadge from '../components/StatusBadge';
 import type { CreateRequestBody, HelpRequestResponse } from '../types/api';
 import type { AppStackParamList } from '../navigation/AppNavigator';
+
+/** 권한 거부 등으로 GPS를 못 쓸 때만 지도 초기 중심용 */
+const FALLBACK_LAT = 37.5665;
+const FALLBACK_LNG = 126.978;
 
 function getActiveRequest(items: HelpRequestResponse[]): HelpRequestResponse | null {
   return (
@@ -187,8 +192,35 @@ function CompletedView({ request }: { request: HelpRequestResponse }) {
 
 export default function TravelerScreen() {
   const [showForm, setShowForm] = useState(false);
-  const [lat, setLat] = useState(DEFAULT_LAT);
-  const [lng, setLng] = useState(DEFAULT_LNG);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (cancelled) return;
+      if (status !== 'granted') {
+        Alert.alert(
+          '위치 권한',
+          '현재 위치를 쓸 수 없습니다. 지도에서 탭하여 요청 위치를 선택할 수 있습니다.',
+        );
+        setLat(FALLBACK_LAT);
+        setLng(FALLBACK_LNG);
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      if (!cancelled) {
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const { data: requestsPage, isLoading } = useMyRequests();
   const createRequest = useCreateRequest();
@@ -210,6 +242,13 @@ export default function TravelerScreen() {
 
   // 활성 요청 없음 → 지도 + 요청 생성
   if (!activeRequest) {
+    if (lat == null || lng == null) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator color="#f59e0b" size="large" />
+        </View>
+      );
+    }
     return (
       <View style={styles.container}>
         <View style={styles.mapContainer}>

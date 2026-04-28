@@ -12,6 +12,7 @@ global.fetch = mockFetch;
 
 describe('apiFetch', () => {
   beforeEach(() => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'http://127.0.0.1:8081';
     jest.clearAllMocks();
     mockGetToken.mockResolvedValue(null);
   });
@@ -48,13 +49,13 @@ describe('apiFetch', () => {
   });
 
   it('returns INTERNAL_ERROR on network error', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+    mockFetch.mockRejectedValueOnce(new Error('Network request failed'));
 
     const result = await apiFetch('/test', { requiresAuth: false });
 
     expect(result.success).toBe(false);
     expect(result.error?.code).toBe('INTERNAL_ERROR');
-    expect(result.error?.message).toBe('Network error');
+    expect(result.error?.message).toContain('네트워크에 연결할 수 없습니다');
   });
 
   it('returns INTERNAL_ERROR with generic message on non-Error rejection', async () => {
@@ -64,5 +65,6 @@ describe('apiFetch', () => {
 
     expect(result.success).toBe(false);
     expect(result.error?.code).toBe('INTERNAL_ERROR');
+    expect(result.error?.message).toBe('연결에 실패했습니다.');
   });
 });
