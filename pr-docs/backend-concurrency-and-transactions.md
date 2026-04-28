@@ -3,18 +3,20 @@
 > 대상: `backend/` Spring Boot + JPA + Redis  
 > 목적: 운영/부하에서 터질 수 있는 경쟁 조건, 트랜잭션 경계, 락 이슈를 코드 기준으로 정리하고 대응·개선 방향을 제시한다.
 
+**리팩토링 적용 내역(문제 → 해결 → 결과)**는 [`backend-concurrency-refactor-summary.md`](./backend-concurrency-refactor-summary.md)에 정리되어 있다.
+
 ---
 
 ## 1. 전체 맵 (어디서 무엇을 쓰는지)
 
 | 영역 | 락 / 일관성 수단 | 트랜잭션 |
 |------|------------------|----------|
-| 매칭 **확정** `MatchService.confirm` | Redis `SET NX` + TTL 5초, `lock:request:{id}` | `TransactionTemplate` → `doConfirm` 단일 트랜잭션 |
+| 매칭 **확정** `MatchService.confirm` | Redis `SET NX` + **설정 가능** TTL (`app.match.confirm-lock-ttl`), `lock:request:{id}` | `TransactionTemplate` → `doConfirm` 단일 트랜잭션 |
 | `HelpRequest` 조회(확정 시) | JPA `PESSIMISTIC_WRITE` (`findByIdWithLock`) | 위와 동일 트랜잭션 안 |
-| `HelpRequest` 엔티티 | `@Version` (낙관적 락 컬럼) | 다른 경로에서 갱신 시 `OptimisticLockException` 가능 |
-| 매칭 **수락** `MatchService.accept` | DB `UNIQUE(request_id, guide_id)` | `@Transactional(readOnly = true)` ⚠️ |
-| 결제 `PaymentService` | 없음 (상태 머신 + DB 유니크) | 메서드별 `@Transactional` |
-| 리뷰 + 가이드 평점 | 없음 | `@Transactional` — `User` 평점 갱신은 read-modify-write |
+| `HelpRequest` 엔티티 | `@Version` (낙관적 락 컬럼) | 다른 경로에서 갱신 시 `OptimisticLockException` 가능 → **전역 409 `OPTIMISTIC_LOCK_CONFLICT`** |
+| 매칭 **수락** `MatchService.accept` | DB `UNIQUE(request_id, guide_id)` + **`DataIntegrityViolationException` 시 재조회 멱등** | 신규 저장만 `TransactionTemplate` (readOnly 트랜잭션 **미사용**) |
+| 결제 `PaymentService.createIntent` | DB 유니크 + **`TransactionTemplate` + DI catch → idempotencyKey 재조회** | `createIntent`는 공개 메서드에 `@Transactional` 없음 |
+| 리뷰 + 가이드 평점 | **`UserRepository.incrementRating` 단일 `UPDATE`(JPQL round)** | `@Transactional` `createReview` 안에서 호출 |
 | 채팅방 생성 `ChatService.createRoom` | `request_id` 유일(채팅방) + idempotent `find` | `confirm` 트랜잭션에 **참여**(같은 스레드에서 중첩) |
 | 이벤트 발행 | `afterCommit` 콜백 / `@TransactionalEventListener(AFTER_COMMIT)` | 커밋 후 브로커 실패 시 **유실 가능** (ADR-003) |
 
@@ -24,7 +26,7 @@
 
 ### 2.1 설계 요약 (잘 된 부분)
 
-1. **분산 락**: `setIfAbsent(lockKey, lockValue, 5, SECONDS)` 로 동일 `requestId`에 대한 확정을 직렬화.
+1. **분산 락**: `setIfAbsent(lockKey, lockValue, confirmLockTtl)` 로 동일 `requestId`에 대한 확정을 직렬화(TTL은 설정으로 조정).
 2. **원자적 해제**: Lua 스크립트로 `GET` 값이 본인 `lockValue`일 때만 `DEL` — 타인이 만료 후 재획득한 키를 지우지 않음.
 3. **finally**: 예외·정상 모두 `releaseLock` 호출.
 4. **DB**: `findByIdWithLock` 으로 `HelpRequest`에 **배타 락** → 같은 행에 대한 동시 갱신과 맞물림.
@@ -50,7 +52,9 @@
 
 ## 3. 매칭 수락 (`MatchService.accept`)
 
-### 3.1 이슈
+> **현재 코드**: 아래 이슈는 `3-concurrency-fix` step 0에서 대부분 해소됨(요약 문서 참고). 이 절은 당시 문제 정의·배경용으로 유지한다.
+
+### 3.1 이슈 (과거 상태)
 
 1. **`@Transactional(readOnly = true)` 안에서 `matchOfferRepository.save()`**  
    - 읽기 전용 힌트와 쓰기가 공존. DB마다 무시되거나, 예상치 못한 최적화/경고가 날 수 있음.  
@@ -71,10 +75,12 @@
 
 ### 4.1 `createIntent`
 
+> **현재 코드**: 유니크 위반 시 `TransactionTemplate` + 재조회 멱등(step 1) 적용됨.
+
 - `idempotencyKey` 선조회 후 `orElseGet`에서 PG `authorize` + `save`.  
-- **경쟁**: 두 스레드가 동시에 `findByIdempotencyKey` 미스 → 이중 `authorize` 시도 → 한쪽은 `request_id` / `idempotency_key` **UNIQUE**로 실패 가능.  
+- **경쟁(과거)**: 두 스레드가 동시에 `findByIdempotencyKey` 미스 → 이중 `authorize` 시도 → 한쪽은 `request_id` / `idempotency_key` **UNIQUE**로 실패 가능.  
 - **트러블슈팅**: Mock PG는 성공할 수 있어 중복 intent 저장 시도까지 갈 수 있음 → DB 에러 로그 확인.  
-- **리팩토링**: DB 유니크 위반을 **멱등 성공**(기존 row 반환)으로 매핑하거나, `requestId` 단위 **짧은 락/락 row**로 직렬화.
+- **리팩토링(적용)**: DB 유니크 위반을 서비스 내 catch 후 **기존 row 반환**으로 매핑.
 
 ### 4.2 `capture`
 
@@ -91,8 +97,8 @@
 ## 5. 리뷰 (`ReviewService.createReview`)
 
 - `request_id` **UNIQUE**로 리뷰 1건 강제 — 동시 두 번 제출 시 한쪽은 DB 에러.  
-- **가이드 평점** `updateGuideRating`: `findById` → 평균 재계산 → `save`. **`User`에 `@Version` 없음** → 동시에 두 리뷰가 **서로 다른 요청**이지만 **같은 가이드**를 평가하면 **lost update** 가능(데이터 정합성).  
-- **리팩토링**: 가이드 ID 단위 락, 또는 `@Version` + 재시도, 또는 DB에서 `avg_rating` 갱신을 단일 SQL/집계로 처리.
+- **가이드 평점(과거)**: `updateGuideRating`이 read-modify-write → **lost update** 가능.  
+- **리팩토링(적용)**: `UserRepository.incrementRating` — 단일 `UPDATE`(JPQL `round`)로 원자 갱신(step 2).
 
 ---
 
@@ -122,19 +128,21 @@
 
 - 확정 경로는 **비관적 락**으로 행을 잠그므로 같은 트랜잭션 내에서 버전 충돌은 거의 없음.  
 - **다른 API**에서 `HelpRequest`를 갱신(예: 상태 변경, 필드 수정)하면서 버전이 올라가고, 그와 겹치면 낙관적 락 예외가 날 수 있음.  
-- **리팩토링**: 전역 `OptimisticLockException` 핸들러에서 **409 + 명확한 코드**로 매핑해 클라이언트가 재조회하도록 하기.
+- **리팩토링(적용됨)**: `GlobalExceptionHandler`에서 `ObjectOptimisticLockingFailureException` → **409** + `ErrorCode.OPTIMISTIC_LOCK_CONFLICT`.
 
 ---
 
 ## 9. 우선순위 요약 (리팩토링 백로그)
 
+아래 **높음·중간** 항목은 phase `3-concurrency-fix`에서 반영됨(요약: [`backend-concurrency-refactor-summary.md`](./backend-concurrency-refactor-summary.md)).
+
 | 우선순위 | 항목 | 성격 |
 |----------|------|------|
-| 높음 | `accept`의 `readOnly=true` + 쓰기 제거 | 정합성·예측 가능한 트랜잭션 |
-| 높음 | `accept` 동시 요청 → 유니크 위반 시 멱등/409 | 사용자 재시도·에러 로그 감소 |
-| 중간 | `createIntent` 동시성 → 유니크/락 기반 멱등 | 결제 의도 이중 생성 방지 |
-| 중간 | `User` 평점 갱신 lost update 방지 | 리뷰 동시성·데이터 정합 |
-| 중간 | Redis 확정 락 TTL·모니터링 | 운영 P99 대비 |
+| ~~높음~~ | ~~`accept`의 `readOnly=true` + 쓰기 제거~~ | **적용됨** |
+| ~~높음~~ | ~~`accept` 동시 요청 → 유니크 위반 시 멱등~~ | **적용됨** |
+| ~~중간~~ | ~~`createIntent` 동시성 → 멱등~~ | **적용됨** |
+| ~~중간~~ | ~~`User` 평점 lost update 방지~~ | **적용됨** |
+| ~~중간~~ | ~~Redis 확정 락 TTL·모니터링~~ | **TTL 설정 + WARN 로그 적용됨** |
 | 낮음 | 실 PG 시 트랜잭션 경계 재설계 | 장기 아키텍처 |
 | 낮음 | Outbox로 Rabbit 전달 보장 | 이벤트 유실(이미 ADR) |
 

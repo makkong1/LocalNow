@@ -68,5 +68,7 @@ dependencyManagement {
 tasks.named('test') {
     useJUnitPlatform()
     environment 'DOCKER_HOST', System.getenv('DOCKER_HOST') ?: "unix:///Users/${System.getProperty('user.name')}/.docker/run/docker.sock"
+    // Newer Docker Engine daemons reject docker-java's legacy default API (1.32).
+    environment 'DOCKER_API_VERSION', System.getenv('DOCKER_API_VERSION') ?: '1.43'
     environment 'TESTCONTAINERS_RYUK_DISABLED', 'true'
 }

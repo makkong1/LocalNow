@@ -1,7 +1,5 @@
 package com.localnow.review.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Objects;
 
@@ -103,19 +101,13 @@ public class ReviewService {
     }
 
     private void updateGuideRating(Long guideId, int newRating) {
-        if (guideId == null)
+        if (guideId == null) {
             return;
-        userRepository.findById(guideId).ifPresent(guide -> {
-            int oldCount = guide.getRatingCount();
-            int newCount = oldCount + 1;
-            BigDecimal newAvg = guide.getAvgRating()
-                    .multiply(BigDecimal.valueOf(oldCount))
-                    .add(BigDecimal.valueOf(newRating))
-                    .divide(BigDecimal.valueOf(newCount), 2, RoundingMode.HALF_UP);
-            guide.setRatingCount(newCount);
-            guide.setAvgRating(newAvg);
-            userRepository.save(guide);
-        });
+        }
+        int updated = userRepository.incrementRating(guideId, newRating);
+        if (updated == 0) {
+            log.warn("incrementRating: guideId={} not found", guideId);
+        }
     }
 
     private ReviewResponse toResponse(Review r) {

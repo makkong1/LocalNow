@@ -1,5 +1,6 @@
 package com.localnow.match.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -19,6 +22,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -29,6 +33,7 @@ import com.localnow.infra.rabbit.RabbitPublisher;
 import com.localnow.match.domain.MatchOffer;
 import com.localnow.match.domain.MatchOfferStatus;
 import com.localnow.match.dto.AcceptRequest;
+import com.localnow.match.dto.ConfirmRequest;
 import com.localnow.match.dto.MatchOfferResponse;
 import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
@@ -62,7 +67,8 @@ class MatchServiceTest {
     void setUp() {
         matchService = new MatchService(
                 helpRequestRepository, matchOfferRepository, userRepository,
-                redisTemplate, rabbitPublisher, transactionTemplate, chatService);
+                redisTemplate, rabbitPublisher, transactionTemplate, chatService,
+                Duration.ofSeconds(5));
         lenient().doAnswer(invocation -> {
             TransactionCallback<?> callback = invocation.getArgument(0);
             return callback.doInTransaction(null);
@@ -201,6 +207,21 @@ class MatchServiceTest {
                         .isEqualTo(HttpStatus.FORBIDDEN));
 
         verify(matchOfferRepository, never()).findByRequestId(anyLong());
+    }
+
+    @Test
+    void confirm_passes_configured_ttl_to_redis_setIfAbsent() {
+        @SuppressWarnings("unchecked")
+        ValueOperations<String, String> valueOps = org.mockito.Mockito.mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.setIfAbsent(anyString(), anyString(), eq(Duration.ofSeconds(5)))).thenReturn(false);
+
+        assertThatThrownBy(() -> matchService.confirm(1L, 10L, new ConfirmRequest(20L)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(valueOps).setIfAbsent(eq("lock:request:1"), anyString(), eq(Duration.ofSeconds(5)));
     }
 
     private HelpRequest buildRequest(Long id, Long travelerId, HelpRequestStatus status) {

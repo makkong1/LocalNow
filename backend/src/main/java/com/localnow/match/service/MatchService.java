@@ -1,14 +1,15 @@
 package com.localnow.match.service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -38,11 +39,9 @@ import com.localnow.user.domain.User;
 import com.localnow.user.domain.UserRole;
 import com.localnow.user.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MatchService {
 
@@ -57,6 +56,29 @@ public class MatchService {
     private final RabbitPublisher rabbitPublisher;
     private final TransactionTemplate transactionTemplate;
     private final ChatService chatService;
+    private final Duration confirmLockTtl;
+
+    public MatchService(
+            HelpRequestRepository helpRequestRepository,
+            MatchOfferRepository matchOfferRepository,
+            UserRepository userRepository,
+            RedisTemplate<String, String> redisTemplate,
+            RabbitPublisher rabbitPublisher,
+            TransactionTemplate transactionTemplate,
+            ChatService chatService,
+            @Value("${app.match.confirm-lock-ttl:5s}") Duration confirmLockTtl) {
+        this.helpRequestRepository = helpRequestRepository;
+        this.matchOfferRepository = matchOfferRepository;
+        this.userRepository = userRepository;
+        this.redisTemplate = redisTemplate;
+        this.rabbitPublisher = rabbitPublisher;
+        this.transactionTemplate = transactionTemplate;
+        this.chatService = chatService;
+        if (confirmLockTtl.isNegative() || confirmLockTtl.isZero()) {
+            throw new IllegalArgumentException("app.match.confirm-lock-ttl must be positive");
+        }
+        this.confirmLockTtl = confirmLockTtl;
+    }
 
     public MatchOfferResponse accept(
             @NonNull Long requestId, @NonNull Long guideId, @Nullable AcceptRequest req) {
@@ -105,8 +127,10 @@ public class MatchService {
         String lockValue = UUID.randomUUID().toString();
 
         boolean acquired = Boolean.TRUE.equals(
-                redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, 5, TimeUnit.SECONDS));
+                redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, confirmLockTtl));
         if (!acquired) {
+            log.warn("Match confirm Redis lock not acquired requestId={} lockKey={} ttl={}",
+                    requestId, lockKey, confirmLockTtl);
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     ErrorCode.MATCH_ALREADY_CONFIRMED.getDefaultMessage());
         }

@@ -57,6 +57,9 @@ app:
   oauth2:
     success-redirect: ${OAUTH2_SUCCESS_REDIRECT_URL:http://localhost:3000/oauth/callback}
     failure-redirect: ${OAUTH2_FAILURE_REDIRECT_URL:http://localhost:3000/oauth/callback?error=1}
+  match:
+    # POST /requests/{id}/confirm Redis NX lock TTL. 운영에서는 P99 확정 트랜잭션+여유만큼 늘리고, 0/음수는 기동 실패.
+    confirm-lock-ttl: ${MATCH_CONFIRM_LOCK_TTL:5s}
 
 # 콘솔 로그에 MDC: 요청ID·서비스 operation (JPA SQL 등 동일 스레드 로그와 상관)
 # 프로덕션에선 root/com.localnow/SQL 등 를 INFO로 내리거나 spring.profiles 로 분리하는 것이 좋다.

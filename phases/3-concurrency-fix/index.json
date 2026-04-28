@@ -13,15 +13,26 @@
     {
       "step": 1,
       "name": "exception-handler-payment",
-      "status": "error",
+      "status": "completed",
       "started_at": "2026-04-26T20:01:53+0900",
-      "failed_at": "2026-04-26T20:07:44+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status"
+      "completed_at": "2026-04-26T22:55:00+0900",
+      "summary": "OPTIMISTIC_LOCK_CONFLICT 에러코드(Java enum + web/mobile types + API_CONVENTIONS) 추가, GlobalExceptionHandler.handleOptimisticLock(409) 추가, PaymentService.createIntent를 TransactionTemplate + DataIntegrityViolationException catch 재조회 멱등 처리로 보강. 단위테스트 PaymentServiceTest(동시성/멱등) + GlobalExceptionHandlerTest 통과(BUILD SUCCESSFUL). 이전 rate-limit으로 인한 status 미갱신 복구."
     },
     {
       "step": 2,
       "name": "review-rating-atomic",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-26T23:05:00+0900",
+      "completed_at": "2026-04-26T23:10:00+0900",
+      "summary": "UserRepository.incrementRating — JPQL 단일 UPDATE(round)로 가이드 평점 원자 갱신, ReviewService.updateGuideRating 교체, ReviewServiceTest 보강(멱등/권한/409), UserRepositoryIT 동시 10스레드 검증(Testcontainers MySQL, Docker 없으면 skip). test 태스크에 DOCKER_API_VERSION 기본값(1.43) 추가로 신형 Docker 데몬과 호환."
+    },
+    {
+      "step": 3,
+      "name": "match-confirm-lock-ttl",
+      "status": "completed",
+      "started_at": "2026-04-27T00:00:00+0900",
+      "completed_at": "2026-04-27T00:15:00+0900",
+      "summary": "confirm Redis 락 TTL을 app.match.confirm-lock-ttl / MATCH_CONFIRM_LOCK_TTL(Duration)로 외부화, 0 이하 기동 실패, 락 미획득 시 WARN 로그(requestId/lockKey/ttl), setIfAbsent(Duration) 사용. MatchServiceTest에 TTL 전달 검증 추가."
     }
   ],
   "created_at": "2026-04-26T19:56:36+0900"
