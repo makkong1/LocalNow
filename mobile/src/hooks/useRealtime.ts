@@ -69,7 +69,7 @@ export function useRealtime({ userId, role, activeRequestId }: UseRealtimeParams
           queryClient.invalidateQueries({ queryKey: ['requests', 'open'] });
         } else if (event.type === 'MATCH_CONFIRMED') {
           Alert.alert('매칭 확정', '요청이 확정되었습니다.');
-          queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+          queryClient.invalidateQueries({ queryKey: ['requests', 'me'] });
           queryClient.invalidateQueries({ queryKey: ['offers', 'mine'] });
         }
       } catch {
