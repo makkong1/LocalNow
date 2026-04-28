@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import TravelerScreen from '../screens/TravelerScreen';
 import GuideScreen from '../screens/GuideScreen';
 import ChatScreen from '../screens/ChatScreen';
+import ChatListScreen from '../screens/ChatListScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import ReviewScreen from '../screens/ReviewScreen';
 import { useAuth } from '../hooks/useAuth';
@@ -27,14 +29,6 @@ export type AppStackParamList = {
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 const Stack = createStackNavigator<AppStackParamList>();
-
-function RecentChatPlaceholder() {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>매칭 확정 후 채팅이 열립니다</Text>
-    </View>
-  );
-}
 
 function MainTabs() {
   const { role } = useAuth();
@@ -60,7 +54,7 @@ function MainTabs() {
       <Tab.Screen name="Guide" component={GuideScreen} options={{ tabBarLabel: '가이드' }} />
       <Tab.Screen
         name="Chat"
-        component={RecentChatPlaceholder}
+        component={ChatListScreen}
         options={{ tabBarLabel: '채팅' }}
       />
     </Tab.Navigator>
@@ -68,9 +62,10 @@ function MainTabs() {
 }
 
 function AppHeader({ isConnected }: { isConnected: boolean }) {
+  const insets = useSafeAreaInsets();
   const { userId, role, logout } = useAuth();
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 10 }]}>
       <View style={styles.headerLeft}>
         <Text style={styles.logo}>LocalNow</Text>
         <View
@@ -126,7 +121,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#262626',
     paddingHorizontal: 16,
-    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -162,15 +156,5 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: '#141414',
     borderTopColor: '#262626',
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0a0a0a',
-  },
-  placeholderText: {
-    color: '#525252',
-    fontSize: 14,
   },
 });
