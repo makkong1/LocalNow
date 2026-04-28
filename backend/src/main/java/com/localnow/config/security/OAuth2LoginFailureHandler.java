@@ -2,6 +2,7 @@ package com.localnow.config.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
@@ -21,17 +22,34 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
     @Value("${app.oauth2.failure-redirect}")
     private String failureRedirect;
 
+    @Value("${app.oauth2.failure-redirect-mobile}")
+    private String failureRedirectMobile;
+
     @Override
     public void onAuthenticationFailure(
             HttpServletRequest request,
             HttpServletResponse response,
             AuthenticationException exception) throws IOException {
-        String base = StringUtils.hasText(failureRedirect)
-                ? failureRedirect
-                : "http://localhost:3000/oauth/callback?error=1";
+        String base = resolveFailureBase(request);
         String msg = exception.getMessage() != null ? exception.getMessage() : "oauth2_failed";
         String enc = URLEncoder.encode(msg, StandardCharsets.UTF_8);
         String sep = base.contains("?") ? "&" : "?";
         getRedirectStrategy().sendRedirect(request, response, base + sep + "oauth2Error=" + enc);
+    }
+
+    private String resolveFailureBase(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        boolean mobile = false;
+        if (session != null) {
+            Object v = session.getAttribute(OAuth2MobileIntentFilter.SESSION_ATTR_MOBILE);
+            session.removeAttribute(OAuth2MobileIntentFilter.SESSION_ATTR_MOBILE);
+            mobile = Boolean.TRUE.equals(v);
+        }
+        if (mobile) {
+            return StringUtils.hasText(failureRedirectMobile)
+                    ? failureRedirectMobile
+                    : "localnow://oauth/callback?error=1";
+        }
+        return StringUtils.hasText(failureRedirect) ? failureRedirect : "http://localhost:3000/oauth/callback?error=1";
     }
 }

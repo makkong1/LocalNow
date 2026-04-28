@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Alert, Linking } from 'react-native';
 import {
   getToken,
   setToken,
@@ -10,6 +11,7 @@ import {
   setUserRole,
   clearUserRole,
 } from '../lib/secure-storage';
+import { parseOAuthReturnUrl, readUserFromAccessTokenJwt } from '../lib/oauth-deep-link';
 import { apiFetch } from '../lib/api-client';
 import type { ApiError, AuthResponse, SignupParams, UserRole } from '../types/api';
 
@@ -37,15 +39,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function applyOAuthReturnUrl(url: string): Promise<boolean> {
+      const parsed = parseOAuthReturnUrl(url);
+      if (!parsed) {
+        return false;
+      }
+      if (parsed.kind === 'error') {
+        if (!cancelled) {
+          setState((s) => ({ ...s, isLoading: false }));
+          Alert.alert('소셜 로그인', parsed.oauth2Error);
+        }
+        return true;
+      }
+      const claims = readUserFromAccessTokenJwt(parsed.accessToken);
+      if (!claims) {
+        if (!cancelled) {
+          setState((s) => ({ ...s, isLoading: false }));
+          Alert.alert('소셜 로그인', '토큰을 처리할 수 없습니다.');
+        }
+        return true;
+      }
+      await Promise.all([
+        setToken(parsed.accessToken),
+        setUserId(claims.userId),
+        setUserRole(claims.role),
+      ]);
+      if (!cancelled) {
+        setState({
+          isLoading: false,
+          isLoggedIn: true,
+          userId: claims.userId,
+          role: claims.role,
+        });
+      }
+      return true;
+    }
+
     (async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl && (await applyOAuthReturnUrl(initialUrl))) {
+        return;
+      }
+      if (cancelled) {
+        return;
+      }
       const token = await getToken();
       if (token) {
         const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
-        setState({ isLoading: false, isLoggedIn: true, userId, role });
-      } else {
+        if (!cancelled) {
+          setState({ isLoading: false, isLoggedIn: true, userId, role });
+        }
+      } else if (!cancelled) {
         setState({ isLoading: false, isLoggedIn: false, userId: null, role: null });
       }
     })();
+
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      void applyOAuthReturnUrl(url);
+    });
+    return () => {
+      cancelled = true;
+      sub.remove();
+    };
   }, []);
 
   async function login(email: string, password: string): Promise<ApiError | null> {

@@ -22,7 +22,7 @@ export function useSetDuty() {
   });
 }
 
-export function useGuideActiveOffer() {
+export function useGuideActiveOffer(options?: { enabled?: boolean }) {
   return useQuery<GuideActiveOfferResponse | null>({
     queryKey: ['offers', 'mine'],
     queryFn: async () => {
@@ -33,5 +33,6 @@ export function useGuideActiveOffer() {
       }
       return res.data;
     },
+    enabled: options?.enabled !== false,
   });
 }

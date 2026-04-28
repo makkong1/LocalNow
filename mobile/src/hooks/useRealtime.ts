@@ -17,23 +17,47 @@ export function useRealtime({ userId, role, activeRequestId }: UseRealtimeParams
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
 
-  // Connect/disconnect lifecycle — reconnect only if user identity changes
+  // Connect/disconnect lifecycle — JWT 가 SecureStore 에 늦게 올 경우(오Auth 직후 등) 첫 페인트보다 늦을 수 있어 짧게 재시도
   useEffect(() => {
     const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
     const wsUrl = baseUrl.replace(/^http/, 'ws') + '/ws-native';
 
     let cancelled = false;
-    (async () => {
-      const token = await getToken();
-      if (cancelled || !token) return;
-      stompClient.connect({
-        url: wsUrl,
-        token,
-        onConnect: () => setIsConnected(true),
-        onDisconnect: () => setIsConnected(false),
-        onError: () => setIsConnected(false),
-      });
-    })();
+    let attempt = 0;
+    const maxAttempts = 20;
+    const delayMs = 150;
+
+    const tryConnectLoop = async () => {
+      while (!cancelled && attempt < maxAttempts) {
+        const token = await getToken();
+        if (cancelled) {
+          return;
+        }
+        if (token) {
+          if (__DEV__) {
+            console.log('[useRealtime] STOMP 연결 시도', wsUrl, attempt > 0 ? `(재시도 ${attempt})` : '');
+          }
+          stompClient.connect({
+            url: wsUrl,
+            token,
+            onConnect: () => setIsConnected(true),
+            onDisconnect: () => setIsConnected(false),
+            onError: () => setIsConnected(false),
+          });
+          return;
+        }
+        attempt += 1;
+        if (__DEV__ && attempt === 1) {
+          console.warn('[useRealtime] JWT 아직 없음 — 짧게 재시도 (오Auth/로그인 직후 레이스 대비)');
+        }
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+      if (!cancelled && __DEV__) {
+        console.warn('[useRealtime] JWT 를 못 받았습니다. 재로그인 또는 EXPO_PUBLIC_API_BASE_URL 확인');
+      }
+    };
+
+    void tryConnectLoop();
 
     return () => {
       cancelled = true;

@@ -33,6 +33,14 @@
       "started_at": "2026-04-27T00:00:00+0900",
       "completed_at": "2026-04-27T00:15:00+0900",
       "summary": "confirm Redis 락 TTL을 app.match.confirm-lock-ttl / MATCH_CONFIRM_LOCK_TTL(Duration)로 외부화, 0 이하 기동 실패, 락 미획득 시 WARN 로그(requestId/lockKey/ttl), setIfAbsent(Duration) 사용. MatchServiceTest에 TTL 전달 검증 추가."
+    },
+    {
+      "step": 4,
+      "name": "chat-list-screen",
+      "status": "completed",
+      "started_at": "2026-04-28T00:00:00+0900",
+      "completed_at": "2026-04-28T00:10:00+0900",
+      "summary": "ChatListScreen 신설(로딩/빈 상태/목록 렌더/navigate), AppNavigator Chat 탭을 RecentChatPlaceholder에서 ChatListScreen으로 교체. RNTL 테스트 5종 통과. 전체 50 tests pass, lint clean."
     }
   ],
   "created_at": "2026-04-26T19:56:36+0900"

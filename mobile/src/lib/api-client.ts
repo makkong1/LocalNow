@@ -55,7 +55,7 @@ export async function apiFetch<T>(
       error: {
         code: 'INTERNAL_ERROR',
         message:
-          'EXPO_PUBLIC_API_BASE_URL 미설정. mobile/.env.local 에 예: EXPO_PUBLIC_API_BASE_URL=http://192.168.0.10:8081 (실기기는 맥 LAN IP, 포트는 백엔드와 동일)',
+          'EXPO_PUBLIC_API_BASE_URL 미설정. mobile/.env.local 예: EXPO_PUBLIC_API_BASE_URL=http://localhost:8080 (시뮬레이터·OAuth 세션은 host 통일; 실기기·Google 제약 시 HTTPS 터널 등)',
         fields: null,
       },
       meta: { requestId: '' },

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   FlatList,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import uuid from 'react-native-uuid';
+import { useRealtimeConnection } from '../context/RealtimeConnectionContext';
 import { useMessages } from '../hooks/useChat';
 import { useAuth } from '../hooks/useAuth';
 import { stompClient } from '../lib/stomp-client';
@@ -24,6 +26,7 @@ type ChatScreenProps = StackScreenProps<AppStackParamList, 'ChatRoom'>;
 export default function ChatScreen({ route }: ChatScreenProps) {
   const { roomId } = route.params;
   const { userId } = useAuth();
+  const stompConnected = useRealtimeConnection();
   const { data: historyMessages, isLoading } = useMessages(roomId);
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessageResponse[]>([]);
   const [text, setText] = useState('');
@@ -38,12 +41,16 @@ export default function ChatScreen({ route }: ChatScreenProps) {
     ),
   ];
 
-  // Subscribe to room topic for realtime messages
+  // Subscribe only after AppNavigator 의 useRealtime 이 STOMP 연결을 마친 뒤 (연결 없이 subscribe 시 stompjs 가 throw)
   useEffect(() => {
+    if (!stompConnected || !roomId) {
+      setIsConnected(stompConnected);
+      return;
+    }
+    setIsConnected(true);
     const sub = stompClient.subscribe(`/topic/rooms/${roomId}`, (body) => {
       try {
         const msg = JSON.parse(body) as ChatMessageResponse;
-        setIsConnected(true);
         setRealtimeMessages((prev) => {
           if (prev.some((m) => m.clientMessageId === msg.clientMessageId)) return prev;
           return [...prev, msg];
@@ -53,7 +60,7 @@ export default function ChatScreen({ route }: ChatScreenProps) {
       }
     });
     return () => sub.unsubscribe();
-  }, [roomId]);
+  }, [roomId, stompConnected]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -65,6 +72,15 @@ export default function ChatScreen({ route }: ChatScreenProps) {
   function sendMessage() {
     const content = text.trim();
     if (!content) return;
+    if (!stompConnected || !stompClient.isConnected) {
+      Alert.alert(
+        '실시간 연결 대기',
+        'WebSocket(STOMP)가 아직 안 붙었습니다.\n\n' +
+          '• 백엔드(bootRun)·docker(MySQL 등) 켜져 있는지 확인\n' +
+          '• Metro 터미널에서 [LocalNow STOMP] 로그 확인 (원인 있으면 거기에 출력됨)',
+      );
+      return;
+    }
     const clientMessageId = uuid.v4() as string;
     stompClient.send(`/app/rooms/${roomId}/messages`, { content, clientMessageId });
     setText('');
