@@ -92,4 +92,27 @@ class UserOAuth2AccountServiceTest {
         verify(userRepository, never()).save(any(User.class));
         verify(oauthIdentityRepository).save(any());
     }
+
+    @Test
+    void newGitHub_noreplyEmail_createsWithGithubProvider() {
+        when(oauthIdentityRepository.findByProviderAndProviderUserId(OAuth2ProviderType.GITHUB, "42"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("octo@users.noreply.github.com")).thenReturn(Optional.empty());
+
+        User saved = new User();
+        saved.setId(4L);
+        saved.setEmail("octo@users.noreply.github.com");
+        saved.setName("octo");
+        saved.setRole(UserRole.TRAVELER);
+        when(userRepository.save(any(User.class))).thenReturn(saved);
+        when(oauthIdentityRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        User out = service.findOrCreateForOAuth(
+                OAuth2ProviderType.GITHUB, "42", "octo@users.noreply.github.com", "octo");
+        assertThat(out.getId()).isEqualTo(4L);
+        var cap = ArgumentCaptor.forClass(com.localnow.user.domain.UserOAuthIdentity.class);
+        verify(oauthIdentityRepository).save(cap.capture());
+        assertThat(cap.getValue().getProvider()).isEqualTo(OAuth2ProviderType.GITHUB);
+        assertThat(cap.getValue().getProviderUserId()).isEqualTo("42");
+    }
 }

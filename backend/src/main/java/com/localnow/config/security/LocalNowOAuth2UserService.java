@@ -1,5 +1,6 @@
 package com.localnow.config.security;
 
+import com.localnow.user.domain.OAuth2ProviderType;
 import com.localnow.user.service.UserOAuth2AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,10 +10,10 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
- * Google UserInfo 를 불러온 뒤, 로컬 {@code users} + {@code user_oauth_identities} 와 맞춘
- * {@link org.springframework.security.oauth2.core.user.OAuth2User} 를 만든다.
+ * <p>Non-OIDC OAuth2(예: GitHub) 전용. Google+openid 는 {@link LocalNowOidcUserService} 를 탄다.
  */
 @Component
 public class LocalNowOAuth2UserService extends DefaultOAuth2UserService {
@@ -27,27 +28,38 @@ public class LocalNowOAuth2UserService extends DefaultOAuth2UserService {
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) {
-        if (!"google".equals(userRequest.getClientRegistration().getRegistrationId())) {
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        if (!"github".equals(registrationId)) {
             throw new OAuth2AuthenticationException(
-                    new OAuth2Error("unsupported_provider", "Only google is supported", null));
+                    new OAuth2Error("unsupported_provider", "Only github is supported here", null));
         }
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        String sub = oAuth2User.getAttribute("sub");
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        if (sub == null || email == null) {
+        Object idObj = oAuth2User.getAttribute("id");
+        if (idObj == null) {
             throw new OAuth2AuthenticationException(
-                    new OAuth2Error("invalid_user", "Google user must have sub and email", null));
+                    new OAuth2Error("invalid_user", "GitHub user must have id", null));
         }
+        String providerUserId = String.valueOf(idObj);
+        String email = oAuth2User.getAttribute("email");
+        String login = oAuth2User.getAttribute("login");
+        if (!StringUtils.hasText(email) && StringUtils.hasText(login)) {
+            email = login + "@users.noreply.github.com";
+        }
+        if (!StringUtils.hasText(email)) {
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("invalid_user", "GitHub user must have email or public login", null));
+        }
+        String name = oAuth2User.getAttribute("name");
         try {
-            var user = userOAuth2AccountService.findOrCreateFromGoogle(sub, email, name);
-            return OAuth2UserResponseMapper.toOAuth2UserWithLocalAttributes(oAuth2User, user);
+            var user = userOAuth2AccountService.findOrCreateForOAuth(
+                    OAuth2ProviderType.GITHUB, providerUserId, email, name);
+            return OAuth2UserResponseMapper.toOAuth2UserWithLocalAttributes(oAuth2User, user, "id");
         } catch (OAuth2AuthenticationException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Failed to find or create local user for Google sub={} email={}", sub, email, e);
+            log.error("Failed to find or create local user for GitHub id={} email={}", providerUserId, email, e);
             throw new OAuth2AuthenticationException(
-                    new OAuth2Error("user_service_error", "Internal error while processing Google login", null));
+                    new OAuth2Error("user_service_error", "Internal error while processing GitHub login", null));
         }
     }
 }

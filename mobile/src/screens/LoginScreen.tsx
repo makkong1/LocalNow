@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  View,
   Text,
   TextInput,
   TouchableOpacity,
@@ -8,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { openBackendOAuth2 } from '../lib/oauth-redirect';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../hooks/useAuth';
@@ -40,6 +42,25 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Text style={styles.title}>LocalNow</Text>
+      <View style={styles.oauthRow}>
+        <TouchableOpacity
+          style={styles.oauthBtn}
+          onPress={() => openBackendOAuth2('google')}
+          testID="oauth-google"
+        >
+          <Text style={styles.oauthBtnText}>Google</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.oauthBtn}
+          onPress={() => openBackendOAuth2('github')}
+          testID="oauth-github"
+        >
+          <Text style={styles.oauthBtnText}>GitHub</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.oauthHint}>
+        소셜 로그인은 브라우저로 열리며, 완료 URL은 success-redirect 설정을 따릅니다.
+      </Text>
       <TextInput
         style={styles.input}
         placeholder="이메일"
@@ -85,6 +106,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0a0a',
     justifyContent: 'center',
     padding: 24,
+  },
+  oauthRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  oauthBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#404040',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: '#141414',
+  },
+  oauthBtnText: {
+    color: '#e5e5e5',
+    fontSize: 14,
+  },
+  oauthHint: {
+    color: '#737373',
+    fontSize: 11,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   title: {
     fontSize: 24,

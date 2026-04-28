@@ -1,6 +1,9 @@
 package com.localnow.match.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,7 +27,9 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.localnow.match.domain.MatchOffer;
 import com.localnow.match.domain.MatchOfferStatus;
+import com.localnow.match.dto.AcceptRequest;
 import com.localnow.match.dto.ConfirmRequest;
+import com.localnow.match.dto.MatchOfferResponse;
 import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
@@ -121,6 +126,51 @@ class MatchServiceConcurrencyIT {
         assertThat(finished).isTrue();
         assertThat(success.get()).isEqualTo(1);
         assertThat(conflict.get()).isEqualTo(9);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("동시성: 같은 (requestId, guideId) 동시 수락 10개 → 모두 성공 응답, DB에 offer 1건")
+    void 동시_수락_같은_가이드_멱등() throws InterruptedException {
+        User traveler = createUser("traveler2@test.com", "Traveler2", UserRole.TRAVELER);
+        User guide = createUser("guide2@test.com", "Guide2", UserRole.GUIDE);
+        HelpRequest request = createRequest(traveler.getId());
+
+        int threadCount = 10;
+        List<MatchOfferResponse> responses = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger errorCount = new AtomicInteger(0);
+        CountDownLatch ready = new CountDownLatch(threadCount);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threadCount);
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(() -> {
+                ready.countDown();
+                try {
+                    start.await();
+                    MatchOfferResponse resp = matchService.accept(
+                            request.getId(), guide.getId(), new AcceptRequest(null));
+                    responses.add(resp);
+                } catch (Exception e) {
+                    errorCount.incrementAndGet();
+                } finally {
+                    done.countDown();
+                }
+            });
+        }
+
+        ready.await();
+        start.countDown();
+        boolean finished = done.await(30, TimeUnit.SECONDS);
+        executor.shutdown();
+
+        assertThat(finished).isTrue();
+        assertThat(errorCount.get()).isEqualTo(0);
+        assertThat(responses).hasSize(threadCount);
+        assertThat(matchOfferRepository.findByRequestId(request.getId())).hasSize(1);
+
+        Long firstId = responses.get(0).id();
+        assertThat(responses).allMatch(r -> r.id().equals(firstId));
     }
 
     private User createUser(String email, String name, UserRole role) {

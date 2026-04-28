@@ -36,6 +36,12 @@ spring:
               - profile
               - email
             # Google OIDC, redirect: {baseUrl}/login/oauth2/code/{registrationId}
+          github:
+            # 비어 있으면 Spring 이 OAuth2 클라이언트 빈 생성에 실패한다. 실제 값은 env / application-local에서 덮어쓴다.
+            client-id: ${GITHUB_CLIENT_ID:github-not-configured}
+            client-secret: ${GITHUB_CLIENT_SECRET:github-not-configured}
+            scope: read:user,user:email
+            # redirect: {baseUrl}/login/oauth2/code/github (GitHub OAuth App 에 동일 URI 등록)
 
 jwt:
   secret: ${JWT_SECRET:please-change-this-secret-in-production}
@@ -51,6 +57,9 @@ app:
   oauth2:
     success-redirect: ${OAUTH2_SUCCESS_REDIRECT_URL:http://localhost:3000/oauth/callback}
     failure-redirect: ${OAUTH2_FAILURE_REDIRECT_URL:http://localhost:3000/oauth/callback?error=1}
+  match:
+    # POST /requests/{id}/confirm Redis NX lock TTL. 운영에서는 P99 확정 트랜잭션+여유만큼 늘리고, 0/음수는 기동 실패.
+    confirm-lock-ttl: ${MATCH_CONFIRM_LOCK_TTL:5s}
 
 # 콘솔 로그에 MDC: 요청ID·서비스 operation (JPA SQL 등 동일 스레드 로그와 상관)
 # 프로덕션에선 root/com.localnow/SQL 등 를 INFO로 내리거나 spring.profiles 로 분리하는 것이 좋다.

@@ -11,10 +11,9 @@ import com.localnow.review.domain.Review;
 import com.localnow.review.dto.CreateReviewRequest;
 import com.localnow.review.dto.ReviewResponse;
 import com.localnow.review.repository.ReviewRepository;
-import com.localnow.user.domain.User;
-import com.localnow.user.domain.UserRole;
 import com.localnow.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -22,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +28,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +49,7 @@ class ReviewServiceTest {
     }
 
     @Test
+    @DisplayName("정상_리뷰_생성_가이드_평점_갱신호출됨")
     void createReview_succeeds_for_completed_request() {
         HelpRequest request = buildRequest(1L, 10L, HelpRequestStatus.COMPLETED);
         when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
@@ -59,25 +60,20 @@ class ReviewServiceTest {
         offer.setStatus(MatchOfferStatus.CONFIRMED);
         when(matchOfferRepository.findByRequestId(1L)).thenReturn(List.of(offer));
 
-        User guide = new User();
-        guide.setId(20L);
-        guide.setRatingCount(0);
-        guide.setAvgRating(BigDecimal.ZERO);
-        guide.setRole(UserRole.GUIDE);
-        when(userRepository.findById(20L)).thenReturn(Optional.of(guide));
-
         Review saved = buildReview(1L, 1L, 10L, 20L, 5);
         when(reviewRepository.save(any())).thenReturn(saved);
-        when(userRepository.save(any())).thenReturn(guide);
+        when(userRepository.incrementRating(eq(20L), eq(5))).thenReturn(1);
 
         ReviewResponse response = reviewService.createReview(10L, 1L,
                 new CreateReviewRequest(5, "Great guide!"));
 
         assertThat(response.rating()).isEqualTo(5);
         assertThat(response.revieweeId()).isEqualTo(20L);
+        verify(userRepository).incrementRating(20L, 5);
     }
 
     @Test
+    @DisplayName("예외_COMPLETED_아닌_요청_리뷰불가")
     void createReview_throws_when_request_is_not_completed() {
         HelpRequest request = buildRequest(1L, 10L, HelpRequestStatus.MATCHED);
         when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
@@ -87,6 +83,19 @@ class ReviewServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    @DisplayName("예외_여행자_아닌_사용자_리뷰불가")
+    void 예외_여행자_아닌_사용자_리뷰불가() {
+        HelpRequest request = buildRequest(1L, 10L, HelpRequestStatus.COMPLETED);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> reviewService.createReview(99L, 1L,
+                new CreateReviewRequest(5, null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     @Test

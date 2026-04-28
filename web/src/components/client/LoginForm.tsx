@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { ApiError, ApiResponse, AuthResponse } from '@/types/api';
 import ApiErrorDisplay from './ApiErrorDisplay';
 import GoogleSignInButton from './GoogleSignInButton';
+import GitHubSignInButton from './GitHubSignInButton';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -51,6 +52,8 @@ export default function LoginForm() {
   return (
     <div className="space-y-6">
       <GoogleSignInButton />
+      <GitHubSignInButton />
+      <p className="text-xs text-center text-neutral-500">Google·GitHub는 여행자로 가입·연동됩니다.</p>
       <div className="relative">
         <div className="absolute inset-0 flex items-center" aria-hidden>
           <div className="w-full border-t border-neutral-800" />

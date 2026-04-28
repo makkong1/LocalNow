@@ -10,6 +10,8 @@ export type ErrorCode =
   | 'MATCH_ALREADY_CONFIRMED'
   | 'PAYMENT_INVALID_STATE'
   | 'RATE_LIMITED'
+  | 'NOT_FOUND'
+  | 'OPTIMISTIC_LOCK_CONFLICT'
   | 'INTERNAL_ERROR';
 
 export interface FieldError {

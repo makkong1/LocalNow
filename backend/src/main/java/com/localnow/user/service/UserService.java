@@ -35,6 +35,10 @@ public class UserService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 이메일/비밀번호 회원가입. 현재는 DB 저장만 하며 <strong>이메일 인증은 없다</strong>.
+     * 추후 링크·코드 인증, {@code email_verified} 또는 활성 플래그를 두면 이 메서드 앞단(또는 별도 플로우)에서 연동할 것.
+     */
     @Transactional
     public AuthResponse register(SignupRequest request) {
         if (request.role() == UserRole.ADMIN) {

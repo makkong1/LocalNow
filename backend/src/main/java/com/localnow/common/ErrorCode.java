@@ -10,6 +10,7 @@ public enum ErrorCode {
     PAYMENT_INVALID_STATE(409, "Payment invalid state"),
     RATE_LIMITED(429, "Rate limited"),
     NOT_FOUND(404, "Not found"),
+    OPTIMISTIC_LOCK_CONFLICT(409, "Resource was modified concurrently, please retry"),
     INTERNAL_ERROR(500, "Internal server error");
 
     private final int httpStatus;
