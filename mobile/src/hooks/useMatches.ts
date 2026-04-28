@@ -27,6 +27,7 @@ export function useAcceptRequest() {
     onSuccess: (_, { requestId }) => {
       qc.invalidateQueries({ queryKey: ['offers', requestId] });
       qc.invalidateQueries({ queryKey: ['requests', 'open'] });
+      qc.invalidateQueries({ queryKey: ['offers', 'mine'] });
     },
   });
 }
@@ -45,6 +46,19 @@ export function useConfirmGuide() {
     onSuccess: (_, { requestId }) => {
       qc.invalidateQueries({ queryKey: ['offers', requestId] });
       qc.invalidateQueries({ queryKey: ['requests', 'me'] });
+    },
+  });
+}
+
+export function useStartService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ requestId }: { requestId: number }) => {
+      const res = await apiFetch<void>(`/requests/${requestId}/start`, { method: 'POST' });
+      if (!res.success) throw res.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['offers', 'mine'] });
     },
   });
 }

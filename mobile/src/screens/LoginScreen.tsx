@@ -93,6 +93,15 @@ export default function LoginScreen() {
           <Text style={styles.buttonText}>로그인</Text>
         )}
       </TouchableOpacity>
+      <View style={styles.recoveryRow}>
+        <TouchableOpacity onPress={() => navigation.navigate('EmailHint')} testID="email-hint-link">
+          <Text style={styles.linkMuted}>이메일 찾기</Text>
+        </TouchableOpacity>
+        <Text style={styles.recoverySep}> · </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} testID="forgot-password-link">
+          <Text style={styles.linkMuted}>비밀번호 재설정</Text>
+        </TouchableOpacity>
+      </View>
       <TouchableOpacity onPress={() => navigation.navigate('Signup')} testID="signup-link">
         <Text style={styles.link}>회원가입</Text>
       </TouchableOpacity>
@@ -170,5 +179,19 @@ const styles = StyleSheet.create({
     color: '#f59e0b',
     textAlign: 'center',
     fontSize: 14,
+  },
+  recoveryRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  recoverySep: {
+    color: '#525252',
+    fontSize: 13,
+  },
+  linkMuted: {
+    color: '#a3a3a3',
+    fontSize: 13,
   },
 });

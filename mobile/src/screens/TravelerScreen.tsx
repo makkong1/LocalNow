@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useMyRequests, useCreateRequest } from '../hooks/useRequests';
@@ -14,11 +15,17 @@ import { useOffers, useConfirmGuide } from '../hooks/useMatches';
 import { useChatRoom } from '../hooks/useChat';
 import { usePaymentIntent } from '../hooks/usePayment';
 import type { PaymentIntentResponse } from '../types/api';
-import LocationMap, { DEFAULT_LAT, DEFAULT_LNG } from '../components/LocationMap';
+import * as Location from 'expo-location';
+import LocationMap from '../components/LocationMap';
 import RequestForm from '../components/RequestForm';
 import GuideOfferCard from '../components/GuideOfferCard';
+import StatusBadge from '../components/StatusBadge';
 import type { CreateRequestBody, HelpRequestResponse } from '../types/api';
 import type { AppStackParamList } from '../navigation/AppNavigator';
+
+/** 권한 거부 등으로 GPS를 못 쓸 때만 지도 초기 중심용 */
+const FALLBACK_LAT = 37.5665;
+const FALLBACK_LNG = 126.978;
 
 function getActiveRequest(items: HelpRequestResponse[]): HelpRequestResponse | null {
   return (
@@ -32,23 +39,7 @@ function getActiveRequest(items: HelpRequestResponse[]): HelpRequestResponse | n
   );
 }
 
-function StatusBadge({ status }: { status: HelpRequestResponse['status'] }) {
-  const colors: Record<string, string> = {
-    OPEN: '#eab308',
-    MATCHED: '#f59e0b',
-    IN_PROGRESS: '#22c55e',
-    COMPLETED: '#525252',
-    CANCELLED: '#ef4444',
-  };
-  return (
-    <View style={[styles.badge, { backgroundColor: colors[status] + '20', borderColor: colors[status] }]}>
-      <View style={[styles.badgeDot, { backgroundColor: colors[status] }]} />
-      <Text style={[styles.badgeText, { color: colors[status] }]}>{status}</Text>
-    </View>
-  );
-}
-
-function RequestCard({ request }: { request: HelpRequestResponse }) {
+function TravelerRequestCard({ request }: { request: HelpRequestResponse }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardRow}>
@@ -70,12 +61,19 @@ function OpenView({ request }: { request: HelpRequestResponse }) {
   const pendingOffers = offers?.filter((o) => o.status === 'PENDING') ?? [];
 
   function handleConfirm(guideId: number) {
-    confirmGuide.mutate({ requestId: request.id, guideId });
+    confirmGuide.mutate(
+      { requestId: request.id, guideId },
+      {
+        onSuccess: () => {
+          Alert.alert('확정 완료', '가이드가 확정되었습니다.');
+        },
+      },
+    );
   }
 
   return (
     <ScrollView style={styles.scrollContainer}>
-      <RequestCard request={request} />
+      <TravelerRequestCard request={request} />
       {pendingOffers.length === 0 ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyText}>가이드 오퍼를 기다리는 중...</Text>
@@ -138,7 +136,7 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
 
   return (
     <ScrollView style={styles.scrollContainer}>
-      <RequestCard request={request} />
+      <TravelerRequestCard request={request} />
       <Text style={styles.sectionLabel}>다음 단계</Text>
       <TouchableOpacity
         testID="go-to-chat-button"
@@ -146,7 +144,9 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
         onPress={goToChat}
         disabled={!room}
       >
-        <Text style={styles.secondaryButtonText}>채팅하기</Text>
+        <Text style={styles.secondaryButtonText}>
+          {room ? '채팅하기' : '채팅방 생성 중...'}
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity
         testID="go-to-payment-button"
@@ -172,7 +172,7 @@ function CompletedView({ request }: { request: HelpRequestResponse }) {
 
   return (
     <ScrollView style={styles.scrollContainer}>
-      <RequestCard request={request} />
+      <TravelerRequestCard request={request} />
       <Text style={styles.sectionLabel}>서비스가 완료되었습니다</Text>
       <TouchableOpacity
         testID="go-to-review-button"
@@ -192,8 +192,35 @@ function CompletedView({ request }: { request: HelpRequestResponse }) {
 
 export default function TravelerScreen() {
   const [showForm, setShowForm] = useState(false);
-  const [lat, setLat] = useState(DEFAULT_LAT);
-  const [lng, setLng] = useState(DEFAULT_LNG);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (cancelled) return;
+      if (status !== 'granted') {
+        Alert.alert(
+          '위치 권한',
+          '현재 위치를 쓸 수 없습니다. 지도에서 탭하여 요청 위치를 선택할 수 있습니다.',
+        );
+        setLat(FALLBACK_LAT);
+        setLng(FALLBACK_LNG);
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      if (!cancelled) {
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const { data: requestsPage, isLoading } = useMyRequests();
   const createRequest = useCreateRequest();
@@ -215,6 +242,13 @@ export default function TravelerScreen() {
 
   // 활성 요청 없음 → 지도 + 요청 생성
   if (!activeRequest) {
+    if (lat == null || lng == null) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator color="#f59e0b" size="large" />
+        </View>
+      );
+    }
     return (
       <View style={styles.container}>
         <View style={styles.mapContainer}>
@@ -371,24 +405,6 @@ const styles = StyleSheet.create({
   cardMeta: {
     color: '#525252',
     fontSize: 11,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 4,
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '500',
   },
   emptyBox: {
     padding: 32,

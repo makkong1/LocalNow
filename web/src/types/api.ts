@@ -53,6 +53,14 @@ export interface UserProfileResponse {
   ratingCount: number;
 }
 
+export interface SimpleTicketResponse {
+  ticketId: string;
+}
+
+export interface EmailHintVerifyResponse {
+  email: string;
+}
+
 export interface HelpRequestResponse {
   id: number;
   travelerId: number;

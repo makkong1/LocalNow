@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       requiresAuth: false,
     });
     if (!res.success || !res.data) {
-      return res.error ?? { code: 'INTERNAL_ERROR', message: 'Login failed', fields: null };
+      return res.error ?? { code: 'INTERNAL_ERROR', message: '로그인에 실패했습니다.', fields: null };
     }
     await Promise.all([
       setToken(res.data.accessToken),
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       requiresAuth: false,
     });
     if (!res.success) {
-      return res.error ?? { code: 'INTERNAL_ERROR', message: 'Signup failed', fields: null };
+      return res.error ?? { code: 'INTERNAL_ERROR', message: '회원가입에 실패했습니다.', fields: null };
     }
     return null;
   }

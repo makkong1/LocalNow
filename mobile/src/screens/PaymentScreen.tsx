@@ -40,7 +40,7 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
     capturePayment.mutate(
       { requestId },
       {
-        onSuccess: () => navigation.replace('Review', { requestId, guideId }),
+        onSuccess: () => navigation.navigate('Review', { requestId, guideId }),
       },
     );
   }

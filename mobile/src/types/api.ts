@@ -68,6 +68,15 @@ export interface SignupParams {
   city?: string;
 }
 
+/** 계정 복구 플로우 — 다음 단계에 제출할 티켓 ID */
+export interface SimpleTicketResponse {
+  ticketId: string;
+}
+
+export interface EmailHintVerifyResponse {
+  email: string;
+}
+
 // Help Request
 export type RequestType = 'GUIDE' | 'TRANSLATION' | 'FOOD' | 'EMERGENCY';
 export type HelpRequestStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -194,3 +203,27 @@ export type StompEvent =
 
 /** @deprecated Use StompEvent */
 export type NotificationPayload = StompEvent;
+
+// Guide active offer (GET /offers/mine)
+export interface GuideActiveOfferResponse {
+  offerId: number;
+  offerStatus: 'PENDING' | 'CONFIRMED';
+  requestId: number;
+  requestType: RequestType;
+  requestStatus: HelpRequestStatus;
+  budgetKrw: number;
+  durationMin: number;
+  description: string;
+  travelerId: number;
+  travelerName: string;
+}
+
+// Chat room list item (GET /chat/rooms)
+export interface ChatRoomSummaryResponse {
+  roomId: number;
+  requestId: number;
+  requestType: RequestType;
+  partnerName: string;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+}

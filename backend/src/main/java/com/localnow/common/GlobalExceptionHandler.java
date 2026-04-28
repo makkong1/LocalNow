@@ -51,8 +51,17 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(ResponseStatusException.class)
         public ResponseEntity<ApiResponse<?>> handleResponseStatus(ResponseStatusException ex) {
                 String message = ex.getReason() != null ? ex.getReason() : ex.getMessage();
+                if (message == null || message.isBlank()) {
+                        message = ErrorCode.INTERNAL_ERROR.getDefaultMessage();
+                }
+                ErrorCode code = switch (ex.getStatusCode().value()) {
+                        case 401 -> ErrorCode.AUTH_UNAUTHENTICATED;
+                        case 403 -> ErrorCode.AUTH_FORBIDDEN;
+                        case 404 -> ErrorCode.NOT_FOUND;
+                        default -> ErrorCode.INTERNAL_ERROR;
+                };
                 return ResponseEntity.status(ex.getStatusCode())
-                                .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR, message));
+                                .body(ApiResponse.fail(code, message));
         }
 
         @ExceptionHandler(AccessDeniedException.class)
