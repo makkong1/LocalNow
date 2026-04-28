@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -27,18 +28,21 @@ public class SecurityConfig {
     private final LocalNowOAuth2UserService localNowOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+    private final OAuth2MobileIntentFilter oAuth2MobileIntentFilter;
 
     public SecurityConfig(
             JwtProvider jwtProvider,
             LocalNowOidcUserService localNowOidcUserService,
             LocalNowOAuth2UserService localNowOAuth2UserService,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
-            OAuth2LoginFailureHandler oAuth2LoginFailureHandler) {
+            OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
+            OAuth2MobileIntentFilter oAuth2MobileIntentFilter) {
         this.jwtProvider = jwtProvider;
         this.localNowOidcUserService = localNowOidcUserService;
         this.localNowOAuth2UserService = localNowOAuth2UserService;
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
         this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
+        this.oAuth2MobileIntentFilter = oAuth2MobileIntentFilter;
     }
 
     @Bean
@@ -60,6 +64,7 @@ public class SecurityConfig {
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler)
                 )
+                .addFilterBefore(oAuth2MobileIntentFilter, OAuth2AuthorizationRequestRedirectFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();

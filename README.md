@@ -1,8 +1,27 @@
 # LocalNow
 
 여행자가 "지금 이 순간" 필요한 현지 가이드/통역/응급 지원을 실시간으로 매칭하는 플랫폼.
-이 저장소는 **Spring Boot 백엔드 + React Native(Expo) 모바일 앱** 을 Claude Code 하네스로 단계별 구축한다.
+이 저장소는 **Spring Boot 백엔드 + React Native(Expo) 모바일 앱** 을 단계별로 구축한다.
 백엔드 API + 웹 데모 클라이언트(0-mvp) 는 완료, 모바일 앱(1-mobile-app) 이 진행 중이다.
+
+---
+
+## 포트폴리오에서 보여 주고 싶은 것
+
+**한 줄 (KR):** 위치·실시간 매칭·채팅·결제(Mock)까지 이어지는 **풀스택 MVP** — 백엔드·웹·모바일이 **동일 API·WebSocket 계약**을 공유한다.
+
+**One-liner (EN):** A full-stack MVP for on-demand traveler–guide matching: Spring Boot API with Redis GEO, distributed locking, RabbitMQ, and STOMP chat; demo web (Next.js) and native app (Expo/React Native).
+
+| 관점 | 이 저장소로 증명할 수 있는 것 |
+| ---- | ----------------------------- |
+| **백엔드 깊이** | 동시성(락·버전), 이벤트 기반 알림, GEO, WebSocket/STOMP, 테스트(Testcontainers) |
+| **엔드투엔드** | 요청 생성 → 오퍼/확정 → 채팅 → 결제 상태 → 리뷰까지 한 흐름 |
+| **모바일** | Secure token storage, GPS·지도, 실시간 STOMP, TanStack Query |
+| **엔지니어링 습관** | PRD/ADR/API 규약 문서, 계층 분리 규칙, phase·리뷰 문서(`pr-docs/`) |
+
+**이력서용 요약 문장·스킬 라인·면접 스크립트**는 [`pr-docs/이력서-프로젝트-요약.md`](pr-docs/이력서-프로젝트-요약.md) 에 정리해 두었다.
+
+---
 
 ## 왜 이 프로젝트인가
 
@@ -24,7 +43,7 @@
 
 | 영역        | 선택                                                                               |
 | ----------- | ---------------------------------------------------------------------------------- |
-| 언어/런타임 | Java 21                                                                            |
+| 언어/런타임 | Java 17                                                                            |
 | 프레임워크  | Spring Boot 3.3 (Web, Security, Validation, Data JPA, Data Redis, AMQP, WebSocket) |
 | 빌드        | Gradle 8 (Groovy DSL)                                                              |
 | 데이터      | MySQL 8 + Flyway                                                                   |
@@ -37,11 +56,12 @@
 ### Mobile (`mobile/`) — 진행 중
 
 | 영역       | 선택                                                                     |
-| ---------- | ------------------------------------------------------------------------ | --- | ------ | --------------------------------------------------- |
+| ---------- | ------------------------------------------------------------------------ |
 | 프레임워크 | React Native 0.76 (New Architecture) + Expo SDK 52                       |
 | 언어       | TypeScript (strict)                                                      |
 | 스타일     | NativeWind v4 (Tailwind CSS 문법)                                        |
-| 서버 상태  | TanStack Query v5                                                        |     | 실시간 | `@stomp/stompjs` + Native WebSocket (SockJS 불필요) |
+| 서버 상태  | TanStack Query v5                                                        |
+| 실시간     | `@stomp/stompjs` + Native WebSocket (SockJS 불필요)                       |
 | 지도       | `react-native-maps` + OpenStreetMap (API 키 불필요)                      |
 | GPS        | `expo-location`                                                          |
 | 인증       | `expo-secure-store` (iOS Keychain / Android Keystore) + 백엔드 직접 호출 |

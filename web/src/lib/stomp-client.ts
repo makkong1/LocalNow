@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 type MessageHandler = (body: unknown) => void;
 type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:8081/ws';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:8080/ws';
 const MAX_RECONNECT = 3;
 
 export class StompClient {

@@ -11,6 +11,7 @@ import ChatListScreen from '../screens/ChatListScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import ReviewScreen from '../screens/ReviewScreen';
 import { useAuth } from '../hooks/useAuth';
+import { RealtimeConnectionProvider } from '../context/RealtimeConnectionContext';
 import { useRealtime } from '../hooks/useRealtime';
 import { useMyRequests } from '../hooks/useRequests';
 
@@ -99,15 +100,17 @@ function AppContent() {
   });
 
   return (
-    <View style={{ flex: 1 }}>
-      <AppHeader isConnected={isConnected} />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen name="ChatRoom" component={ChatScreen} />
-        <Stack.Screen name="Payment" component={PaymentScreen} />
-        <Stack.Screen name="Review" component={ReviewScreen} />
-      </Stack.Navigator>
-    </View>
+    <RealtimeConnectionProvider isConnected={isConnected}>
+      <View style={{ flex: 1 }}>
+        <AppHeader isConnected={isConnected} />
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="ChatRoom" component={ChatScreen} />
+          <Stack.Screen name="Payment" component={PaymentScreen} />
+          <Stack.Screen name="Review" component={ReviewScreen} />
+        </Stack.Navigator>
+      </View>
+    </RealtimeConnectionProvider>
   );
 }
 

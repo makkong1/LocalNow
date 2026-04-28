@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * Google 로그인 성공 후, 앱(웹/모바일 웹뷰)이 받을 URL 로 리다이렉트하며
@@ -31,8 +32,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.oauth2.success-redirect}")
     private String successRedirect;
 
+    @Value("${app.oauth2.success-redirect-mobile}")
+    private String successRedirectMobile;
+
     @Value("${app.oauth2.failure-redirect}")
     private String failureRedirect;
+
+    @Value("${app.oauth2.failure-redirect-mobile}")
+    private String failureRedirectMobile;
 
     public OAuth2LoginSuccessHandler(JwtProvider jwtProvider) {
         this.jwtProvider = jwtProvider;
@@ -50,9 +57,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             log.error("OAuth2 principal missing local attributes: uid={} role={} attrs={}",
                     uid, role, oAuth2User.getAttributes().keySet());
             // sendError(500) 는 /error 로 ERROR dispatch → 인증 302 루프를 피하고 실패 콜백으로 보낸다
-            String base = StringUtils.hasText(failureRedirect)
-                    ? failureRedirect
-                    : "http://localhost:3000/oauth/callback?error=1";
+            String base = resolveFailureBase(request);
             String enc = URLEncoder.encode("invalid_oauth2_principal", StandardCharsets.UTF_8);
             String sep = base.contains("?") ? "&" : "?";
             getRedirectStrategy().sendRedirect(request, response, base + sep + "oauth2Error=" + enc);
@@ -61,8 +66,36 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         log.debug("OAuth2 login success: userId={} role={}", uid, role);
         String token = jwtProvider.generateToken((Long) uid, (String) role);
         String enc = URLEncoder.encode(token, StandardCharsets.UTF_8);
-        String base = StringUtils.hasText(successRedirect) ? successRedirect : "http://localhost:3000/oauth/callback";
+        String base = resolveSuccessBase(request);
         String target = base + (base.contains("#") ? "&" : "#") + "access_token=" + enc;
         getRedirectStrategy().sendRedirect(request, response, target);
+    }
+
+    private boolean consumeMobileReturn(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return false;
+        }
+        Object v = session.getAttribute(OAuth2MobileIntentFilter.SESSION_ATTR_MOBILE);
+        session.removeAttribute(OAuth2MobileIntentFilter.SESSION_ATTR_MOBILE);
+        return Boolean.TRUE.equals(v);
+    }
+
+    private String resolveSuccessBase(HttpServletRequest request) {
+        if (consumeMobileReturn(request)) {
+            return StringUtils.hasText(successRedirectMobile)
+                    ? successRedirectMobile
+                    : "localnow://oauth/callback";
+        }
+        return StringUtils.hasText(successRedirect) ? successRedirect : "http://localhost:3000/oauth/callback";
+    }
+
+    private String resolveFailureBase(HttpServletRequest request) {
+        if (consumeMobileReturn(request)) {
+            return StringUtils.hasText(failureRedirectMobile)
+                    ? failureRedirectMobile
+                    : "localnow://oauth/callback?error=1";
+        }
+        return StringUtils.hasText(failureRedirect) ? failureRedirect : "http://localhost:3000/oauth/callback?error=1";
     }
 }
