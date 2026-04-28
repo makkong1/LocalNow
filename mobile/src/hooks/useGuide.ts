@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
+import type { GuideActiveOfferResponse } from '../types/api';
 
 export function useSetDuty() {
   return useMutation({
@@ -17,6 +18,20 @@ export function useSetDuty() {
         body: { onDuty, lat, lng },
       });
       if (!res.success) throw res.error;
+    },
+  });
+}
+
+export function useGuideActiveOffer() {
+  return useQuery<GuideActiveOfferResponse | null>({
+    queryKey: ['offers', 'mine'],
+    queryFn: async () => {
+      const res = await apiFetch<GuideActiveOfferResponse>('/offers/mine');
+      if (!res.success) {
+        if (res.error?.code === 'NOT_FOUND') return null;
+        throw res.error;
+      }
+      return res.data;
     },
   });
 }

@@ -50,6 +50,7 @@ export function useRealtime({ userId, role, activeRequestId }: UseRealtimeParams
         const event = JSON.parse(body) as StompEvent;
         if (event.type === 'CHAT_MESSAGE') {
           queryClient.invalidateQueries({ queryKey: ['messages', event.roomId] });
+          queryClient.invalidateQueries({ queryKey: ['chatRooms'] });
         }
       } catch {
         // ignore malformed frames
@@ -69,6 +70,7 @@ export function useRealtime({ userId, role, activeRequestId }: UseRealtimeParams
         } else if (event.type === 'MATCH_CONFIRMED') {
           Alert.alert('매칭 확정', '요청이 확정되었습니다.');
           queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+          queryClient.invalidateQueries({ queryKey: ['offers', 'mine'] });
         }
       } catch {
         // ignore malformed frames

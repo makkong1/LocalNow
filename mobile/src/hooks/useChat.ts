@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
-import type { ChatRoomResponse, ChatMessageResponse } from '../types/api';
+import type { ChatRoomResponse, ChatMessageResponse, ChatRoomSummaryResponse } from '../types/api';
 
 export function useChatRoom(requestId: number) {
   return useQuery({
@@ -21,6 +21,17 @@ export function useMessages(roomId: number) {
     queryKey: ['messages', roomId],
     queryFn: async () => {
       const res = await apiFetch<ChatMessageResponse[]>(`/rooms/${roomId}/messages`);
+      if (!res.success || res.data == null) throw res.error;
+      return res.data;
+    },
+  });
+}
+
+export function useChatRooms() {
+  return useQuery<ChatRoomSummaryResponse[]>({
+    queryKey: ['chatRooms'],
+    queryFn: async () => {
+      const res = await apiFetch<ChatRoomSummaryResponse[]>('/chat/rooms');
       if (!res.success || res.data == null) throw res.error;
       return res.data;
     },
