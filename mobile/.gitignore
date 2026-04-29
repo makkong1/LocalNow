@@ -36,6 +36,5 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
+# generated native folders (Android는 Gradle 동기화·CI용으로 저장소에 포함)
 /ios
-/android

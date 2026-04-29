@@ -4,7 +4,9 @@ import type { MatchOfferResponse } from '../types/api';
 
 interface GuideOfferCardProps {
   offer: MatchOfferResponse;
+  hasCertification: boolean;
   onConfirm: (guideId: number) => void;
+  onPressProfile: () => void;
   isConfirming: boolean;
 }
 
@@ -22,13 +24,29 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function GuideOfferCard({ offer, onConfirm, isConfirming }: GuideOfferCardProps) {
+export default function GuideOfferCard({
+  offer,
+  hasCertification,
+  onConfirm,
+  onPressProfile,
+  isConfirming,
+}: GuideOfferCardProps) {
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.guideName}>{offer.guideName}</Text>
-        <StarRating rating={offer.guideAvgRating} />
-      </View>
+      <TouchableOpacity style={styles.cardHeader} onPress={onPressProfile} activeOpacity={0.7}>
+        <View style={styles.nameRow}>
+          <Text style={styles.guideName}>{offer.guideName}</Text>
+          {hasCertification && (
+            <View style={styles.certBadge}>
+              <Text style={styles.certBadgeText}>인증됨</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.headerRight}>
+          <StarRating rating={offer.guideAvgRating} />
+          <Text style={styles.profileLink}>상세 보기 →</Text>
+        </View>
+      </TouchableOpacity>
       {offer.message ? <Text style={styles.message}>{offer.message}</Text> : null}
       <Text style={styles.meta}>
         {new Date(offer.createdAt).toLocaleTimeString('ko-KR', {
@@ -59,15 +77,38 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 8,
+    gap: 4,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   guideName: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  certBadge: {
+    backgroundColor: '#16a34a',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  certBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  profileLink: {
+    color: '#f59e0b',
+    fontSize: 12,
   },
   starRow: {
     flexDirection: 'row',

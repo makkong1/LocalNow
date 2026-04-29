@@ -35,6 +35,15 @@ public class User {
 
     private String city;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
+    @Column(name = "birth_year")
+    private Short birthYear;
+
+    @Column(name = "bio", columnDefinition = "TEXT")
+    private String bio;
+
     @Column(name = "avg_rating", precision = 3, scale = 2)
     private BigDecimal avgRating = BigDecimal.ZERO;
 
@@ -78,6 +87,21 @@ public class User {
     public Integer getRatingCount() { return ratingCount; }
     public void setRatingCount(Integer ratingCount) { this.ratingCount = ratingCount; }
 
+    public String getProfileImageUrl() { return profileImageUrl; }
+    public void setProfileImageUrl(String profileImageUrl) { this.profileImageUrl = profileImageUrl; }
+
+    public Short getBirthYear() { return birthYear; }
+    public void setBirthYear(Short birthYear) { this.birthYear = birthYear; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    public void updateProfile(String profileImageUrl, Short birthYear, String bio) {
+        this.profileImageUrl = profileImageUrl;
+        this.birthYear = birthYear;
+        this.bio = bio;
+    }
 }

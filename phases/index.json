@@ -15,6 +15,11 @@
     {
       "dir": "3-concurrency-fix",
       "status": "completed"
+    },
+    {
+      "dir": "4-guide-profile-offer",
+      "status": "completed",
+      "completed_at": "2026-04-29T20:20:00+0900"
     }
   ]
 }

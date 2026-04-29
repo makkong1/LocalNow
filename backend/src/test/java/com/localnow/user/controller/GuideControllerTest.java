@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.localnow.config.security.JwtProvider;
 import com.localnow.config.security.TestSecurityConfig;
 import com.localnow.infra.redis.RedisGeoService;
+import com.localnow.user.service.CertificationService;
 
 @WebMvcTest(GuideController.class)
 @Import(TestSecurityConfig.class)
@@ -35,6 +36,9 @@ class GuideControllerTest {
 
     @MockBean
     private RedisGeoService redisGeoService;
+
+    @MockBean
+    private CertificationService certificationService;
 
     @MockBean
     private JwtProvider jwtProvider;
