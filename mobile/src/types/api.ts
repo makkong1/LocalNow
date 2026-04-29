@@ -54,6 +54,9 @@ export interface UserProfileResponse {
   city: string;
   avgRating: number;
   ratingCount: number;
+  profileImageUrl: string | null;
+  birthYear: number | null;
+  bio: string | null;
 }
 
 /** @deprecated Use UserProfileResponse */
@@ -180,6 +183,30 @@ export interface PaymentIntentResponse {
 
 /** @deprecated Use PaymentIntentResponse */
 export type PaymentIntent = PaymentIntentResponse;
+
+// Guide certifications
+export interface CertificationResponse {
+  id: number;
+  name: string;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
+// Public profile (GET /users/{userId}/profile)
+export interface PublicProfileResponse {
+  id: number;
+  name: string;
+  profileImageUrl: string | null;
+  birthYear: number | null;
+  bio: string | null;
+  role: UserRole;
+  languages: string[];
+  avgRating: number;
+  ratingCount: number;
+  completedCount: number;
+  certifications: CertificationResponse[];
+  recentReviews: ReviewResponse[];
+}
 
 // Review
 export interface ReviewResponse {

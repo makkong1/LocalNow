@@ -4,12 +4,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import TravelerScreen from '../screens/TravelerScreen';
 import GuideScreen from '../screens/GuideScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import ReviewScreen from '../screens/ReviewScreen';
+import ProfileEditScreen from '../screens/ProfileEditScreen';
 import { useAuth } from '../hooks/useAuth';
 import { RealtimeConnectionProvider } from '../context/RealtimeConnectionContext';
 import { useRealtime } from '../hooks/useRealtime';
@@ -26,6 +29,7 @@ export type AppStackParamList = {
   ChatRoom: { roomId: number; requestId: number };
   Payment: { requestId: number; guideId: number };
   Review: { requestId: number; guideId: number };
+  ProfileEdit: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -65,6 +69,7 @@ function MainTabs() {
 function AppHeader({ isConnected }: { isConnected: boolean }) {
   const insets = useSafeAreaInsets();
   const { userId, role, logout } = useAuth();
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   return (
     <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 10 }]}>
       <View style={styles.headerLeft}>
@@ -74,9 +79,11 @@ function AppHeader({ isConnected }: { isConnected: boolean }) {
         />
       </View>
       <View style={styles.headerRight}>
-        <Text style={styles.userInfo}>
-          #{userId} · {role}
-        </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('ProfileEdit')} testID="profile-edit-button">
+          <Text style={styles.userInfo}>
+            #{userId} · {role}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={logout} testID="logout-button">
           <Text style={styles.logout}>로그아웃</Text>
         </TouchableOpacity>
@@ -108,6 +115,7 @@ function AppContent() {
           <Stack.Screen name="ChatRoom" component={ChatScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
           <Stack.Screen name="Review" component={ReviewScreen} />
+          <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
         </Stack.Navigator>
       </View>
     </RealtimeConnectionProvider>

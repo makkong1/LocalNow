@@ -30,7 +30,6 @@ export default function ChatScreen({ route }: ChatScreenProps) {
   const { data: historyMessages, isLoading } = useMessages(roomId);
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessageResponse[]>([]);
   const [text, setText] = useState('');
-  const [isConnected, setIsConnected] = useState(() => stompClient.isConnected);
   const flatListRef = useRef<FlatList>(null);
 
   // Merge history + realtime, dedup by clientMessageId
@@ -44,10 +43,8 @@ export default function ChatScreen({ route }: ChatScreenProps) {
   // Subscribe only after AppNavigator 의 useRealtime 이 STOMP 연결을 마친 뒤 (연결 없이 subscribe 시 stompjs 가 throw)
   useEffect(() => {
     if (!stompConnected || !roomId) {
-      setIsConnected(stompConnected);
       return;
     }
-    setIsConnected(true);
     const sub = stompClient.subscribe(`/topic/rooms/${roomId}`, (body) => {
       try {
         const msg = JSON.parse(body) as ChatMessageResponse;
@@ -104,9 +101,9 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         <Text style={styles.headerTitle}>채팅방 #{roomId}</Text>
         <View style={styles.connStatus}>
           <View
-            style={[styles.connDot, { backgroundColor: isConnected ? '#22c55e' : '#ef4444' }]}
+            style={[styles.connDot, { backgroundColor: stompConnected ? '#22c55e' : '#ef4444' }]}
           />
-          <Text style={styles.connLabel}>{isConnected ? 'connected' : 'disconnected'}</Text>
+          <Text style={styles.connLabel}>{stompConnected ? 'connected' : 'disconnected'}</Text>
         </View>
       </View>
 

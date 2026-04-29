@@ -1,5 +1,10 @@
 import { getToken } from './secure-storage';
-import type { ApiResponse } from '../types/api';
+import type {
+  ApiResponse,
+  CertificationResponse,
+  PublicProfileResponse,
+  UserProfileResponse,
+} from '../types/api';
 
 /** 매 요청 시 읽음 — Jest 등에서 env 주입 시점과 맞추기 위함 */
 function baseUrl(): string {
@@ -92,9 +97,75 @@ export async function apiFetch<T>(
   }
 }
 
+/** multipart/form-data 업로드용 — Content-Type 헤더를 설정하지 않아 boundary가 자동으로 붙는다 */
+export async function apiFetchMultipart<T>(
+  path: string,
+  formData: FormData,
+  method: string = 'POST',
+): Promise<ApiResponse<T>> {
+  const resolved = baseUrl();
+  if (!resolved) {
+    return {
+      success: false,
+      data: null,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'EXPO_PUBLIC_API_BASE_URL 미설정',
+        fields: null,
+      },
+      meta: { requestId: '' },
+    };
+  }
+
+  const token = await getToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await fetch(`${resolved}${path}`, { method, headers, body: formData });
+    return res.json() as Promise<ApiResponse<T>>;
+  } catch (e) {
+    const raw = e instanceof Error ? e.message : String(e);
+    const msg = localizeFetchFailure(raw);
+    return {
+      success: false,
+      data: null,
+      error: { code: 'INTERNAL_ERROR', message: msg, fields: null },
+      meta: { requestId: '' },
+    };
+  }
+}
+
 export const apiClient = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+
+  uploadProfileImage(imageUri: string): Promise<ApiResponse<UserProfileResponse>> {
+    const formData = new FormData();
+    formData.append('file', { uri: imageUri, name: 'profile.jpg', type: 'image/jpeg' } as unknown as Blob);
+    return apiFetchMultipart<UserProfileResponse>('/users/profile-image', formData);
+  },
+
+  getPublicProfile(userId: number): Promise<ApiResponse<PublicProfileResponse>> {
+    return apiFetch<PublicProfileResponse>(`/users/${userId}/profile`, { requiresAuth: false });
+  },
+
+  getMyCertifications(): Promise<ApiResponse<CertificationResponse[]>> {
+    return apiFetch<CertificationResponse[]>('/guide/certifications');
+  },
+
+  uploadCertification(name: string, fileUri: string): Promise<ApiResponse<CertificationResponse>> {
+    const formData = new FormData();
+    formData.append('file', { uri: fileUri, name: 'certification.pdf', type: 'application/pdf' } as unknown as Blob);
+    formData.append('name', name);
+    return apiFetchMultipart<CertificationResponse>('/guide/certifications', formData);
+  },
+
+  deleteCertification(certId: number): Promise<ApiResponse<void>> {
+    return apiFetch<void>(`/guide/certifications/${certId}`, { method: 'DELETE' });
+  },
 };
