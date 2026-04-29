@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "backend-guide-public-profile",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-04-29T19:37:18+0900",
+      "summary": "GET /users/{userId}/profile 공개 API 완료, PublicProfileResponse(자격증+완료수+최근후기 포함)",
+      "completed_at": "2026-04-29T20:10:00+0900"
     },
     {
       "step": 3,
