@@ -13,6 +13,7 @@ import ChatListScreen from '../screens/ChatListScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import ReviewScreen from '../screens/ReviewScreen';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
+import GuideProfileScreen from '../screens/GuideProfileScreen';
 import { useAuth } from '../hooks/useAuth';
 import { RealtimeConnectionProvider } from '../context/RealtimeConnectionContext';
 import { useRealtime } from '../hooks/useRealtime';
@@ -30,6 +31,7 @@ export type AppStackParamList = {
   Payment: { requestId: number; guideId: number };
   Review: { requestId: number; guideId: number };
   ProfileEdit: undefined;
+  GuideProfile: { userId: number };
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -116,6 +118,7 @@ function AppContent() {
           <Stack.Screen name="Payment" component={PaymentScreen} />
           <Stack.Screen name="Review" component={ReviewScreen} />
           <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+          <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
         </Stack.Navigator>
       </View>
     </RealtimeConnectionProvider>
