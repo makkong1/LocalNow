@@ -378,6 +378,41 @@ class StepExecutor:
 
             self._execute_single_step(pending, guardrails)
 
+    def _get_merge_target(self) -> str:
+        """dev 브랜치가 있으면 dev, 없으면 main을 반환."""
+        r = self._run_git("rev-parse", "--verify", "dev")
+        if r.returncode == 0:
+            return "dev"
+        r = self._run_git("ls-remote", "--heads", "origin", "dev")
+        if r.returncode == 0 and r.stdout.strip():
+            return "dev"
+        return "main"
+
+    def _merge_to_target(self) -> str:
+        """feature 브랜치를 dev(없으면 main)에 머지하고 target 브랜치명을 반환."""
+        feature_branch = f"feat-{self._phase_name}"
+        target = self._get_merge_target()
+
+        r = self._run_git("checkout", target)
+        if r.returncode != 0:
+            r = self._run_git("checkout", "-b", target, f"origin/{target}")
+            if r.returncode != 0:
+                print(f"  ERROR: '{target}' 브랜치로 전환 실패: {r.stderr.strip()}")
+                sys.exit(1)
+
+        r = self._run_git(
+            "merge", "--no-ff", feature_branch,
+            "-m", f"Merge branch '{feature_branch}' into {target}",
+        )
+        if r.returncode != 0:
+            print(f"  ERROR: merge 실패: {r.stderr.strip()}")
+            self._run_git("merge", "--abort")
+            self._run_git("checkout", feature_branch)
+            sys.exit(1)
+
+        print(f"  ✓ Merged {feature_branch} → {target}")
+        return target
+
     def _finalize(self):
         index = self._read_json(self._index_file)
         index["completed_at"] = self._stamp()
@@ -391,13 +426,17 @@ class StepExecutor:
             if r.returncode == 0:
                 print(f"  ✓ {msg}")
 
+        # feature 브랜치 → dev(없으면 main) 머지
+        target = self._merge_to_target()
+
         if self._auto_push:
-            branch = f"feat-{self._phase_name}"
-            r = self._run_git("push", "-u", "origin", branch)
-            if r.returncode != 0:
-                print(f"\n  ERROR: git push 실패: {r.stderr.strip()}")
-                sys.exit(1)
-            print(f"  ✓ Pushed to origin/{branch}")
+            feature_branch = f"feat-{self._phase_name}"
+            for branch in [feature_branch, target]:
+                r = self._run_git("push", "-u", "origin", branch)
+                if r.returncode != 0:
+                    print(f"\n  ERROR: '{branch}' push 실패: {r.stderr.strip()}")
+                    sys.exit(1)
+                print(f"  ✓ Pushed to origin/{branch}")
 
         print(f"\n{'='*60}")
         print(f"  Phase '{self._phase_name}' completed!")
