@@ -8,6 +8,7 @@ public final class SecurityPathPatterns {
 
     public static final String[] UNAUTHENTICATED = {
             "/auth/**",
+            "/files/**",
             "/actuator/health",
             "/actuator/info",
             "/swagger-ui/**",

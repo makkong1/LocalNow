@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,6 +86,14 @@ public class UserService {
 
         String token = jwtProvider.generateToken(user.getId(), user.getRole().name());
         return new AuthResponse(token, user.getId(), user.getRole().name(), user.getName());
+    }
+
+    @Transactional
+    public UserProfileResponse updateProfileImage(@NonNull Long userId, @Nullable String imageUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+        user.setProfileImageUrl(imageUrl);
+        return getProfile(userId);
     }
 
     public UserProfileResponse getProfile(@NonNull Long userId) {
