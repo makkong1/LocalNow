@@ -57,6 +57,8 @@ public class UserService {
                 ? String.join(",", request.languages())
                 : null);
         user.setCity(request.city());
+        user.setBirthYear(request.birthYear());
+        user.setBio(request.bio());
         user.setAvgRating(BigDecimal.ZERO);
         user.setRatingCount(0);
 
@@ -101,6 +103,9 @@ public class UserService {
                 languages,
                 user.getCity(),
                 user.getAvgRating(),
-                user.getRatingCount());
+                user.getRatingCount(),
+                user.getProfileImageUrl(),
+                user.getBirthYear(),
+                user.getBio());
     }
 }

@@ -11,5 +11,8 @@ public record UserProfileResponse(
         List<String> languages,
         String city,
         BigDecimal avgRating,
-        Integer ratingCount
+        Integer ratingCount,
+        String profileImageUrl,
+        Short birthYear,
+        String bio
 ) {}

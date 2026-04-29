@@ -1,0 +1,39 @@
+{
+  "project": "LocalNow",
+  "phase": "4-guide-profile-offer",
+  "steps": [
+    {
+      "step": 0,
+      "name": "backend-user-schema",
+      "status": "completed",
+      "started_at": "2026-04-29T19:30:15+0900",
+      "summary": "V11 마이그레이션(users 컬럼 3개 + certifications 테이블), Certification 엔티티/Repository, DTO 확장 완료"
+    },
+    {
+      "step": 1,
+      "name": "backend-file-upload",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "backend-guide-public-profile",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "mobile-profile-setup",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "mobile-guide-profile-view",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "mobile-offer-accept-ux",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-04-29T19:30:15+0900"
+}
