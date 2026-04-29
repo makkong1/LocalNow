@@ -15,12 +15,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.common.ErrorCode;
 import com.localnow.config.security.JwtProvider;
+import com.localnow.match.repository.MatchOfferRepository;
+import com.localnow.review.dto.ReviewResponse;
+import com.localnow.review.service.ReviewService;
+import com.localnow.user.domain.Certification;
 import com.localnow.user.domain.User;
 import com.localnow.user.domain.UserRole;
 import com.localnow.user.dto.AuthResponse;
+import com.localnow.user.dto.CertificationResponse;
 import com.localnow.user.dto.LoginRequest;
+import com.localnow.user.dto.PublicProfileResponse;
 import com.localnow.user.dto.SignupRequest;
 import com.localnow.user.dto.UserProfileResponse;
+import com.localnow.user.repository.CertificationRepository;
 import com.localnow.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +42,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
+    private final CertificationRepository certificationRepository;
+    private final MatchOfferRepository matchOfferRepository;
+    private final ReviewService reviewService;
 
     /**
      * 이메일/비밀번호 회원가입. 현재는 DB 저장만 하며 <strong>이메일 인증은 없다</strong>.
@@ -116,5 +126,43 @@ public class UserService {
                 user.getProfileImageUrl(),
                 user.getBirthYear(),
                 user.getBio());
+    }
+
+    public PublicProfileResponse getPublicProfile(@NonNull Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        ErrorCode.USER_NOT_FOUND.getDefaultMessage()));
+
+        boolean isGuide = user.getRole() == UserRole.GUIDE;
+
+        List<String> languages = (user.getLanguages() != null && !user.getLanguages().isBlank())
+                ? Arrays.asList(user.getLanguages().split(","))
+                : Collections.emptyList();
+
+        List<CertificationResponse> certifications = isGuide
+                ? certificationRepository.findByUserId(userId).stream()
+                        .map(c -> new CertificationResponse(c.getId(), c.getName(), c.getFileUrl(), c.getUploadedAt()))
+                        .toList()
+                : Collections.emptyList();
+
+        int completedCount = isGuide
+                ? (int) matchOfferRepository.countCompletedByGuideId(userId)
+                : 0;
+
+        List<ReviewResponse> recentReviews = reviewService.getRecentReviews(userId, 5);
+
+        return new PublicProfileResponse(
+                user.getId(),
+                user.getName(),
+                user.getProfileImageUrl(),
+                user.getBirthYear() != null ? (int) user.getBirthYear() : null,
+                user.getBio(),
+                user.getRole().name(),
+                languages,
+                user.getAvgRating(),
+                user.getRatingCount(),
+                completedCount,
+                certifications,
+                recentReviews);
     }
 }

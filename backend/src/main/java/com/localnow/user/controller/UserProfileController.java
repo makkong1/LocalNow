@@ -2,11 +2,14 @@ package com.localnow.user.controller;
 
 import com.localnow.common.ApiResponse;
 import com.localnow.infra.storage.FileStorageService;
+import com.localnow.user.dto.PublicProfileResponse;
 import com.localnow.user.dto.UserProfileResponse;
 import com.localnow.user.service.UserService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,5 +46,11 @@ public class UserProfileController {
         }
 
         return ResponseEntity.ok(ApiResponse.ok(updated));
+    }
+
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<ApiResponse<PublicProfileResponse>> getPublicProfile(
+            @PathVariable Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(userService.getPublicProfile(userId)));
     }
 }

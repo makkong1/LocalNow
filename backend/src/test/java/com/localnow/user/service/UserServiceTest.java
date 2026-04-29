@@ -23,11 +23,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.common.ErrorCode;
 import com.localnow.config.security.JwtProvider;
+import com.localnow.match.repository.MatchOfferRepository;
+import com.localnow.review.service.ReviewService;
 import com.localnow.user.domain.User;
 import com.localnow.user.domain.UserRole;
 import com.localnow.user.dto.AuthResponse;
 import com.localnow.user.dto.LoginRequest;
 import com.localnow.user.dto.SignupRequest;
+import com.localnow.user.repository.CertificationRepository;
 import com.localnow.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,13 +42,23 @@ class UserServiceTest {
     @Mock
     private JwtProvider jwtProvider;
 
+    @Mock
+    private CertificationRepository certificationRepository;
+
+    @Mock
+    private MatchOfferRepository matchOfferRepository;
+
+    @Mock
+    private ReviewService reviewService;
+
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, jwtProvider, passwordEncoder);
+        userService = new UserService(userRepository, jwtProvider, passwordEncoder,
+                certificationRepository, matchOfferRepository, reviewService);
     }
 
     @Test
