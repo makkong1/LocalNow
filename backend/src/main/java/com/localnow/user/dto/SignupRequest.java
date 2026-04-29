@@ -21,5 +21,7 @@ public record SignupRequest(
         @NotNull(message = "역할을 선택하세요.")
         UserRole role,
         List<String> languages,
-        String city
+        String city,
+        Short birthYear,
+        String bio
 ) {}

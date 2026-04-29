@@ -12,6 +12,7 @@ import {
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useMyRequests, useCreateRequest } from '../hooks/useRequests';
 import { useOffers, useConfirmGuide } from '../hooks/useMatches';
+import { usePublicProfile } from '../hooks/usePublicProfile';
 import { useChatRoom } from '../hooks/useChat';
 import { usePaymentIntent } from '../hooks/usePayment';
 import type { PaymentIntentResponse } from '../types/api';
@@ -54,20 +55,52 @@ function TravelerRequestCard({ request }: { request: HelpRequestResponse }) {
   );
 }
 
+// 오퍼 카드 래퍼 — 공개 프로필 조회 후 자격증 여부 전달 (로딩 중엔 false)
+function OfferCardItem({
+  offer,
+  onConfirm,
+  isConfirming,
+}: {
+  offer: import('../types/api').MatchOfferResponse;
+  onConfirm: (guideId: number) => void;
+  isConfirming: boolean;
+}) {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
+  const { data: profile } = usePublicProfile(offer.guideId);
+  const hasCertification = (profile?.certifications?.length ?? 0) > 0;
+
+  return (
+    <GuideOfferCard
+      offer={offer}
+      hasCertification={hasCertification}
+      onConfirm={onConfirm}
+      onPressProfile={() => navigation.navigate('GuideProfile', { userId: offer.guideId })}
+      isConfirming={isConfirming}
+    />
+  );
+}
+
 // Sub-component: OPEN 상태 (오퍼 목록)
 function OpenView({ request }: { request: HelpRequestResponse }) {
   const { data: offers } = useOffers(request.id);
   const confirmGuide = useConfirmGuide();
   const pendingOffers = offers?.filter((o) => o.status === 'PENDING') ?? [];
 
-  function handleConfirm(guideId: number) {
-    confirmGuide.mutate(
-      { requestId: request.id, guideId },
-      {
-        onSuccess: () => {
-          Alert.alert('확정 완료', '가이드가 확정되었습니다.');
+  function handleConfirm(guideId: number, guideName: string) {
+    Alert.alert(
+      '가이드를 선택하시겠습니까?',
+      `${guideName} 가이드로 매칭을 확정합니다.`,
+      [
+        { text: '아니오', style: 'cancel' },
+        {
+          text: '예, 확정합니다',
+          onPress: () =>
+            confirmGuide.mutate(
+              { requestId: request.id, guideId },
+              { onSuccess: () => Alert.alert('확정 완료', '가이드가 확정되었습니다.') },
+            ),
         },
-      },
+      ],
     );
   }
 
@@ -80,10 +113,10 @@ function OpenView({ request }: { request: HelpRequestResponse }) {
         </View>
       ) : (
         pendingOffers.map((offer) => (
-          <GuideOfferCard
+          <OfferCardItem
             key={offer.id}
             offer={offer}
-            onConfirm={handleConfirm}
+            onConfirm={(guideId) => handleConfirm(guideId, offer.guideName)}
             isConfirming={confirmGuide.isPending}
           />
         ))
@@ -137,6 +170,15 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
   return (
     <ScrollView style={styles.scrollContainer}>
       <TravelerRequestCard request={request} />
+      {guideId != null && (
+        <TouchableOpacity
+          testID="guide-profile-button"
+          onPress={() => navigation.navigate('GuideProfile', { userId: guideId })}
+          style={styles.profileLinkRow}
+        >
+          <Text style={styles.profileLinkText}>가이드 프로필 보기 →</Text>
+        </TouchableOpacity>
+      )}
       <Text style={styles.sectionLabel}>다음 단계</Text>
       <TouchableOpacity
         testID="go-to-chat-button"
@@ -422,6 +464,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 12,
     marginTop: 4,
+  },
+  profileLinkRow: {
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  profileLinkText: {
+    color: '#f59e0b',
+    fontSize: 14,
+    fontWeight: '500',
   },
   modalContainer: {
     flex: 1,

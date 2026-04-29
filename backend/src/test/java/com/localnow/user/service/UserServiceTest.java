@@ -23,11 +23,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.common.ErrorCode;
 import com.localnow.config.security.JwtProvider;
+import com.localnow.match.repository.MatchOfferRepository;
+import com.localnow.review.service.ReviewService;
 import com.localnow.user.domain.User;
 import com.localnow.user.domain.UserRole;
 import com.localnow.user.dto.AuthResponse;
 import com.localnow.user.dto.LoginRequest;
 import com.localnow.user.dto.SignupRequest;
+import com.localnow.user.repository.CertificationRepository;
 import com.localnow.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,20 +42,30 @@ class UserServiceTest {
     @Mock
     private JwtProvider jwtProvider;
 
+    @Mock
+    private CertificationRepository certificationRepository;
+
+    @Mock
+    private MatchOfferRepository matchOfferRepository;
+
+    @Mock
+    private ReviewService reviewService;
+
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, jwtProvider, passwordEncoder);
+        userService = new UserService(userRepository, jwtProvider, passwordEncoder,
+                certificationRepository, matchOfferRepository, reviewService);
     }
 
     @Test
     void register_success_returns_token() {
         SignupRequest req = new SignupRequest(
                 "test@test.com", "password123", "Test User",
-                UserRole.TRAVELER, List.of("ko", "en"), "Seoul");
+                UserRole.TRAVELER, List.of("ko", "en"), "Seoul", null, null);
 
         User savedUser = buildUser(1L, "test@test.com", "Test User", UserRole.TRAVELER);
 
@@ -87,7 +100,7 @@ class UserServiceTest {
     void register_adminRole_forbidden() {
         SignupRequest req = new SignupRequest(
                 "admin@test.com", "password123", "Nope",
-                UserRole.ADMIN, null, null);
+                UserRole.ADMIN, null, null, null, null);
 
         assertThatThrownBy(() -> userService.register(req))
                 .isInstanceOf(ResponseStatusException.class)
@@ -102,7 +115,7 @@ class UserServiceTest {
     void register_duplicateEmail_throws_conflict() {
         SignupRequest req = new SignupRequest(
                 "test@test.com", "password123", "Test User",
-                UserRole.TRAVELER, null, null);
+                UserRole.TRAVELER, null, null, null, null);
 
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(new User()));
 
@@ -141,7 +154,7 @@ class UserServiceTest {
     void register_guide_initialRatingIsZero() {
         SignupRequest req = new SignupRequest(
                 "guide@test.com", "password123", "Guide User",
-                UserRole.GUIDE, null, null);
+                UserRole.GUIDE, null, null, null, null);
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
 

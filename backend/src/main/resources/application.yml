@@ -1,6 +1,10 @@
 spring:
   config:
     import: "optional:classpath:application-local.yml"
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   datasource:
     # docker-compose MySQL 은 호스트에서 3307 로 노출(로컬 MySQL 과 3306 충돌 방지). 로컬 전용 DB 는 DB_URL 로 3306 등 지정.
     url: ${DB_URL:jdbc:mysql://localhost:3307/localnow?serverTimezone=UTC&characterEncoding=UTF-8}
@@ -87,6 +91,10 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{ISO8601} %5p [%t] [%X{requestId:-}][%X{operation:-}] %logger{40} - %m%n%wEx"
+
+localnow:
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 
 management:
   endpoints:

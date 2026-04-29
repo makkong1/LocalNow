@@ -75,6 +75,15 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
+    public List<ReviewResponse> getRecentReviews(Long revieweeId, int limit) {
+        PageRequest pageable = PageRequest.of(0, limit);
+        return reviewRepository.findByRevieweeIdOrderByIdDesc(revieweeId, pageable)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public ReviewPageResponse getReviews(Long revieweeId, Long cursor, int size) {
         PageRequest pageable = PageRequest.of(0, size + 1);
         List<Review> items = (cursor == null)
