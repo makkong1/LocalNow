@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-05-01T00:49:51+0900",
       "summary": "GET /chat/rooms 구현 완료(ChatRoomSummaryResponse DTO, getRoomsForUser), ChatController @RequestMapping('/chat') 경로 정리, mobile useChat.ts 경로 동기화, ChatServiceTest 3케이스 추가(traveler/guide/empty-message)",
-      "completed_at": "2026-05-01T01:10:00+0900"
+      "completed_at": "2026-05-01T00:55:05+0900"
     },
     {
       "step": 2,
