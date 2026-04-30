@@ -116,6 +116,24 @@ public class RequestService {
         return new HelpRequestPageResponse(items.stream().map(this::toResponse).toList(), nextCursor);
     }
 
+    @Transactional
+    public void cancelRequest(@NonNull Long requestId, @NonNull Long travelerId) {
+        HelpRequest request = repository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        ErrorCode.REQUEST_NOT_FOUND.getDefaultMessage()));
+        if (!travelerId.equals(request.getTravelerId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+        try {
+            request.toCancelled();
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    ErrorCode.PAYMENT_INVALID_STATE.getDefaultMessage());
+        }
+        repository.save(request);
+    }
+
     private HelpRequestResponse toResponse(HelpRequest r) {
         return new HelpRequestResponse(
                 r.getId(), r.getTravelerId(), r.getRequestType(),
