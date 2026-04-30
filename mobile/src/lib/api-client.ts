@@ -168,4 +168,8 @@ export const apiClient = {
   deleteCertification(certId: number): Promise<ApiResponse<void>> {
     return apiFetch<void>(`/guide/certifications/${certId}`, { method: 'DELETE' });
   },
+
+  cancelRequest(requestId: number): Promise<ApiResponse<void>> {
+    return apiFetch<void>(`/requests/${requestId}`, { method: 'DELETE' });
+  },
 };

@@ -180,6 +180,42 @@ class RequestServiceTest {
         assertThat(page.nextCursor()).isNull();
     }
 
+    @Test
+    void cancelRequest_open_status_transitions_to_cancelled() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+        when(repository.save(any(HelpRequest.class))).thenReturn(r);
+
+        requestService.cancelRequest(1L, 42L);
+
+        assertThat(r.getStatus()).isEqualTo(HelpRequestStatus.CANCELLED);
+        verify(repository).save(r);
+    }
+
+    @Test
+    void cancelRequest_different_traveler_throws_403() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+
+        assertThatThrownBy(() -> requestService.cancelRequest(1L, 99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void cancelRequest_completed_status_throws_409() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.COMPLETED, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+
+        assertThatThrownBy(() -> requestService.cancelRequest(1L, 42L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+        verify(repository, never()).save(any());
+    }
+
     private HelpRequest buildRequest(Long id, Long travelerId, RequestType type,
                                      HelpRequestStatus status, long budgetKrw) {
         HelpRequest r = new HelpRequest();

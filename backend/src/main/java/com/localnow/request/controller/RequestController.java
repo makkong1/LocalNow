@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -70,6 +71,19 @@ public class RequestController {
         UserRole role = resolveUserRole(authentication);
         HelpRequestResponse response = requestService.getRequestForUser(id, userId, role);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> cancelRequest(
+            @PathVariable @NonNull Long id,
+            Authentication authentication) {
+        if (!isTraveler(authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.fail(ErrorCode.AUTH_FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage()));
+        }
+        Long userId = (Long) authentication.getPrincipal();
+        requestService.cancelRequest(id, userId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     @GetMapping("/me")

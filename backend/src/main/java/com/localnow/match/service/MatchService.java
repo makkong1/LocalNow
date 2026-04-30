@@ -152,16 +152,19 @@ public class MatchService {
         switch (role) {
             case TRAVELER -> {
                 if (!userId.equals(request.getTravelerId())) {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
                 }
             }
             case GUIDE -> {
                 if (request.getStatus() != HelpRequestStatus.OPEN
                         && !matchOfferRepository.existsByRequestIdAndGuideId(requestId, userId)) {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
                 }
             }
-            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+            default ->
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
         }
 
         List<MatchOffer> offers = matchOfferRepository.findByRequestId(requestId);

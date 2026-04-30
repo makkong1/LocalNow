@@ -53,12 +53,25 @@ function ChatRoomRow({
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
-  const { data: rooms, isLoading } = useChatRooms();
+  const { data: rooms, isLoading, isError, refetch } = useChatRooms();
 
   if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator testID="chat-list-loading" color="#f59e0b" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.center}>
+        <Text testID="chat-list-error" style={styles.errorText}>
+          채팅 목록을 불러오지 못했습니다
+        </Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+          <Text style={styles.retryText}>다시 시도</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -102,6 +115,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0a0a',
   },
   emptyText: { color: '#525252', fontSize: 14 },
+  errorText: { color: '#ef4444', fontSize: 14, marginBottom: 12 },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#1c1c1c',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  retryText: { color: '#f59e0b', fontSize: 13, fontWeight: '500' },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
