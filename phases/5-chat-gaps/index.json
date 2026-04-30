@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "request-cancel-api",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-01T00:55:05+0900",
+      "summary": "DELETE /requests/{id} 취소 API 추가, mobile apiClient.cancelRequest() 추가, 서비스 테스트 3케이스 통과",
+      "completed_at": "2026-05-01T01:04:00+0900"
     },
     {
       "step": 3,
