@@ -6,7 +6,7 @@ export function useChatRoom(requestId: number) {
   return useQuery({
     queryKey: ['chatRoom', requestId],
     queryFn: async () => {
-      const res = await apiFetch<ChatRoomResponse>(`/requests/${requestId}/room`);
+      const res = await apiFetch<ChatRoomResponse>(`/chat/requests/${requestId}/room`);
       if (!res.success) {
         if (res.error?.code === 'REQUEST_NOT_FOUND') return null;
         throw res.error;
@@ -20,7 +20,7 @@ export function useMessages(roomId: number) {
   return useQuery({
     queryKey: ['messages', roomId],
     queryFn: async () => {
-      const res = await apiFetch<ChatMessageResponse[]>(`/rooms/${roomId}/messages`);
+      const res = await apiFetch<ChatMessageResponse[]>(`/chat/rooms/${roomId}/messages`);
       if (!res.success || res.data == null) throw res.error;
       return res.data;
     },
