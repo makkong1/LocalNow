@@ -20,6 +20,10 @@
       "dir": "4-guide-profile-offer",
       "status": "completed",
       "completed_at": "2026-04-29T20:20:00+0900"
+    },
+    {
+      "dir": "5-chat-gaps",
+      "status": "pending"
     }
   ]
 }
