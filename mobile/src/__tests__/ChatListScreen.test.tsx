@@ -47,6 +47,12 @@ describe('ChatListScreen', () => {
     expect(getByTestId('chat-list-loading')).toBeTruthy();
   });
 
+  it('오류 발생 시 에러 메시지를 표시한다', () => {
+    useChatRooms.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: jest.fn() });
+    const { getByTestId } = render(<ChatListScreen />);
+    expect(getByTestId('chat-list-error')).toBeTruthy();
+  });
+
   it('채팅방이 없을 때 empty state를 표시한다', () => {
     useChatRooms.mockReturnValue({ data: [], isLoading: false });
     const { getByTestId } = render(<ChatListScreen />);

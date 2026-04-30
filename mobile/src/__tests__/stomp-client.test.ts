@@ -16,7 +16,7 @@ jest.mock('@stomp/stompjs', () => ({
 }));
 
 // Provide global WebSocket
-const mockWebSocketInstance = { close: jest.fn(), readyState: 0 };
+const mockWebSocketInstance = { close: jest.fn(), readyState: 0, addEventListener: jest.fn() };
 const MockWebSocket = jest.fn().mockReturnValue(mockWebSocketInstance);
 (global as unknown as Record<string, unknown>).WebSocket = MockWebSocket;
 

@@ -18,10 +18,13 @@ import com.localnow.chat.domain.ChatRoom;
 import com.localnow.chat.dto.ChatMessageRequest;
 import com.localnow.chat.dto.ChatMessageResponse;
 import com.localnow.chat.dto.ChatRoomResponse;
+import com.localnow.chat.dto.ChatRoomSummaryResponse;
 import com.localnow.chat.repository.ChatMessageRepository;
 import com.localnow.chat.repository.ChatRoomRepository;
 import com.localnow.common.ErrorCode;
 import com.localnow.infra.rabbit.RabbitPublisher;
+import com.localnow.request.repository.HelpRequestRepository;
+import com.localnow.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,8 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final RabbitPublisher rabbitPublisher;
+    private final HelpRequestRepository helpRequestRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public ChatRoomResponse createRoom(
@@ -101,6 +106,28 @@ public class ChatService {
         return chatMessageRepository.findByRoomIdOrderBySentAtAsc(roomId).stream()
                 .map(this::toMessageResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRoomSummaryResponse> getRoomsForUser(@NonNull Long userId) {
+        // TODO: N+1 — replace with a single JOIN query when room count grows
+        List<ChatRoom> rooms = chatRoomRepository.findByTravelerIdOrGuideIdOrderByIdDesc(userId, userId);
+        return rooms.stream().map(room -> {
+            String requestType = helpRequestRepository.findById(room.getRequestId())
+                    .map(r -> r.getRequestType().name())
+                    .orElse("GUIDE");
+            Long partnerId = userId.equals(room.getTravelerId()) ? room.getGuideId() : room.getTravelerId();
+            String partnerName = userRepository.findById(partnerId)
+                    .map(u -> u.getName())
+                    .orElse("Unknown");
+            return chatMessageRepository.findTopByRoomIdOrderBySentAtDesc(room.getId())
+                    .map(msg -> new ChatRoomSummaryResponse(
+                            room.getId(), room.getRequestId(), requestType,
+                            partnerName, msg.getContent(), msg.getSentAt()))
+                    .orElse(new ChatRoomSummaryResponse(
+                            room.getId(), room.getRequestId(), requestType,
+                            partnerName, null, null));
+        }).toList();
     }
 
     @Transactional(readOnly = true)
