@@ -7,7 +7,8 @@
       "name": "chatlist-error-handling",
       "status": "completed",
       "started_at": "2026-05-01T00:48:12+0900",
-      "summary": "ChatListScreen에 isError 분기 추가(testID=chat-list-error, 재시도 버튼), 테스트 6케이스(loading/error/empty/data/preview/navigate) 통과"
+      "summary": "ChatListScreen에 isError 분기 추가(testID=chat-list-error, 재시도 버튼), 테스트 6케이스(loading/error/empty/data/preview/navigate) 통과",
+      "completed_at": "2026-05-01T00:49:51+0900"
     },
     {
       "step": 1,
