@@ -2,13 +2,15 @@ package com.localnow.request.service;
 
 import com.localnow.infra.rabbit.RabbitPublisher;
 import com.localnow.infra.redis.RedisGeoService;
+import com.localnow.match.domain.MatchOffer;
+import com.localnow.match.domain.MatchOfferStatus;
+import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
 import com.localnow.request.domain.RequestType;
 import com.localnow.request.dto.CreateRequestRequest;
 import com.localnow.request.dto.HelpRequestResponse;
 import com.localnow.request.event.MatchDispatchEvent;
-import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.repository.HelpRequestRepository;
 import com.localnow.user.domain.UserRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -214,6 +216,55 @@ class RequestServiceTest {
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void startRequest_matched_guide_transitions_to_in_progress() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.MATCHED, 10000L);
+        MatchOffer offer = buildOffer(1L, 10L, MatchOfferStatus.CONFIRMED);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+        when(matchOfferRepository.findByRequestIdAndGuideId(1L, 10L)).thenReturn(Optional.of(offer));
+        when(repository.save(any(HelpRequest.class))).thenReturn(r);
+
+        HelpRequestResponse response = requestService.startRequest(1L, 10L);
+
+        assertThat(r.getStatus()).isEqualTo(HelpRequestStatus.IN_PROGRESS);
+        assertThat(response.status()).isEqualTo(HelpRequestStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void startRequest_wrong_guide_throws_403() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.MATCHED, 10000L);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+        when(matchOfferRepository.findByRequestIdAndGuideId(1L, 99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> requestService.startRequest(1L, 99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void startRequest_non_matched_status_throws_409() {
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        MatchOffer offer = buildOffer(1L, 10L, MatchOfferStatus.CONFIRMED);
+        when(repository.findById(1L)).thenReturn(Optional.of(r));
+        when(matchOfferRepository.findByRequestIdAndGuideId(1L, 10L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> requestService.startRequest(1L, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+        verify(repository, never()).save(any());
+    }
+
+    private MatchOffer buildOffer(Long id, Long guideId, MatchOfferStatus status) {
+        MatchOffer offer = new MatchOffer();
+        offer.setId(id);
+        offer.setGuideId(guideId);
+        offer.setStatus(status);
+        return offer;
     }
 
     private HelpRequest buildRequest(Long id, Long travelerId, RequestType type,

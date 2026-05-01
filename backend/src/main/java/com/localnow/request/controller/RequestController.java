@@ -73,6 +73,19 @@ public class RequestController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @PostMapping("/{id}/start")
+    public ResponseEntity<ApiResponse<HelpRequestResponse>> startRequest(
+            @PathVariable @NonNull Long id,
+            Authentication authentication) {
+        if (!isGuide(authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.fail(ErrorCode.AUTH_FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage()));
+        }
+        Long userId = (Long) authentication.getPrincipal();
+        HelpRequestResponse response = requestService.startRequest(id, userId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> cancelRequest(
             @PathVariable @NonNull Long id,
