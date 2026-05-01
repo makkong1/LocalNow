@@ -178,11 +178,65 @@ class RequestServiceTest {
         when(repository.findByStatusOrderByIdDesc(eq(HelpRequestStatus.OPEN), any()))
                 .thenReturn(List.of(a, b));
 
-        var page = requestService.getOpenRequests(null, 10);
+        var page = requestService.getOpenRequests(null, 10, null, null, null, null, 5.0);
 
         assertThat(page.items()).hasSize(2);
         assertThat(page.items().get(0).id()).isEqualTo(2L);
         assertThat(page.nextCursor()).isNull();
+    }
+
+    @Test
+    void getOpenRequests_filterByRequestType_excludesOtherTypes() {
+        HelpRequest a = buildRequest(2L, 1L, RequestType.GUIDE, HelpRequestStatus.OPEN, 5000L);
+        HelpRequest b = buildRequest(1L, 2L, RequestType.FOOD, HelpRequestStatus.OPEN, 3000L);
+        when(repository.findByStatusOrderByIdDesc(eq(HelpRequestStatus.OPEN), any()))
+                .thenReturn(List.of(a, b));
+
+        var page = requestService.getOpenRequests(null, 10, RequestType.GUIDE, null, null, null, 5.0);
+
+        assertThat(page.items()).hasSize(1);
+        assertThat(page.items().get(0).requestType()).isEqualTo(RequestType.GUIDE);
+        assertThat(page.nextCursor()).isNull();
+    }
+
+    @Test
+    void getOpenRequests_sortByBudgetAsc_returnsAscendingOrder() {
+        HelpRequest a = buildRequest(2L, 1L, RequestType.GUIDE, HelpRequestStatus.OPEN, 5000L);
+        HelpRequest b = buildRequest(1L, 2L, RequestType.FOOD, HelpRequestStatus.OPEN, 3000L);
+        when(repository.findByStatusOrderByBudgetKrwAsc(eq(HelpRequestStatus.OPEN), any()))
+                .thenReturn(List.of(b, a));
+
+        var page = requestService.getOpenRequests(null, 10, null, "budgetAsc", null, null, 5.0);
+
+        assertThat(page.items()).hasSize(2);
+        assertThat(page.items().get(0).budgetKrw()).isEqualTo(3000L);
+        assertThat(page.items().get(1).budgetKrw()).isEqualTo(5000L);
+        assertThat(page.nextCursor()).isNull();
+    }
+
+    @Test
+    void getOpenRequests_withLatLng_callsFindNearbyOpen() {
+        double lat = 37.5665, lng = 126.978, radiusKm = 3.0;
+        GeoUtils.Mbr mbr = GeoUtils.boundingBox(lat, lng, radiusKm);
+        double radiusM = radiusKm * 1000.0;
+
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        when(repository.findNearbyOpen(
+                eq(lat), eq(lng),
+                eq(mbr.latMin()), eq(mbr.lngMin()),
+                eq(mbr.latMax()), eq(mbr.lngMax()),
+                eq(radiusM)))
+                .thenReturn(List.of(r));
+
+        var page = requestService.getOpenRequests(null, 10, null, null, lat, lng, radiusKm);
+
+        assertThat(page.items()).hasSize(1);
+        assertThat(page.nextCursor()).isNull();
+        verify(repository).findNearbyOpen(
+                eq(lat), eq(lng),
+                eq(mbr.latMin()), eq(mbr.lngMin()),
+                eq(mbr.latMax()), eq(mbr.lngMax()),
+                eq(radiusM));
     }
 
     @Test

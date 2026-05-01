@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
+import com.localnow.request.domain.RequestType;
 
 import jakarta.persistence.LockModeType;
 
@@ -34,6 +35,14 @@ public interface HelpRequestRepository extends JpaRepository<HelpRequest, Long> 
     List<HelpRequest> findByStatusOrderByIdDesc(HelpRequestStatus status, Pageable pageable);
 
     List<HelpRequest> findByStatusAndIdLessThanOrderByIdDesc(HelpRequestStatus status, Long cursor, Pageable pageable);
+
+    List<HelpRequest> findByStatusOrderByBudgetKrwAsc(HelpRequestStatus status, Pageable pageable);
+
+    List<HelpRequest> findByStatusOrderByBudgetKrwDesc(HelpRequestStatus status, Pageable pageable);
+
+    List<HelpRequest> findByStatusAndRequestTypeOrderByBudgetKrwAsc(HelpRequestStatus status, RequestType requestType, Pageable pageable);
+
+    List<HelpRequest> findByStatusAndRequestTypeOrderByBudgetKrwDesc(HelpRequestStatus status, RequestType requestType, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM HelpRequest r WHERE r.id = :id")
