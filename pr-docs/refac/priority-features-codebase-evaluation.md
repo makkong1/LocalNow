@@ -143,17 +143,17 @@ return toResponse(paymentIntentRepository.save(intent));
 
 ## 5. 제안 목록 외 — 코드에서 짚을 갭 (전체)
 
-| 항목                                        | 근거                                                                      | 심각도 | 상태 |
-| ------------------------------------------- | ------------------------------------------------------------------------- | ------ | ---- |
-| **`GET /chat/rooms` 구현 또는 모바일 수정** | §2.1 — 현재 연동 불일치. 단순 URL 추가가 아닌 3-way JOIN + 신규 DTO 작업. | 🔴     | ✅ 완료 (step 1) |
-| **PG 이중 호출 경쟁 조건**                  | §3.1 — `createIntent()` 락 없음. 실 PG 연동 전 블로커.                    | 🔴     | ⏳ 미해결 |
-| **`ChatListScreen` 오류 침묵**              | §2.2 — `isError` 분기 없어 API 오류가 빈 목록으로 표시됨.                 | 🟡     | ✅ 완료 (step 0) |
-| **요청 취소 REST**                          | `toCancelled()`만 존재, API 없음.                                         | 🟡     | ✅ 완료 (step 2) — `DELETE /requests/{id}` |
+| 항목                                        | 근거                                                                      | 심각도 | 상태                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------- | ------ | ---------------------------------------------- |
+| **`GET /chat/rooms` 구현 또는 모바일 수정** | §2.1 — 현재 연동 불일치. 단순 URL 추가가 아닌 3-way JOIN + 신규 DTO 작업. | 🔴     | ✅ 완료 (step 1)                               |
+| **PG 이중 호출 경쟁 조건**                  | §3.1 — `createIntent()` 락 없음. 실 PG 연동 전 블로커.                    | 🔴     | ⏳ 미해결                                      |
+| **`ChatListScreen` 오류 침묵**              | §2.2 — `isError` 분기 없어 API 오류가 빈 목록으로 표시됨.                 | 🟡     | ✅ 완료 (step 0)                               |
+| **요청 취소 REST**                          | `toCancelled()`만 존재, API 없음.                                         | 🟡     | ✅ 완료 (step 2) — `DELETE /requests/{id}`     |
 | **`IN_PROGRESS` 사용 여부 결정**            | 호출부 없음. 제거·문서화·"서비스 시작" API 중 택일.                       | 🟡     | ✅ 완료 (step 3) — `POST /requests/{id}/start` |
-| **`start_at` 정책 명시**                    | 필드만 있고 매칭 타이밍에 미반영.                                         | 🟡     | ⏳ 미해결 |
-| **`ChatController` 경로 혼재**              | §3.2 — `/requests/*` 네임스페이스 공유. `/chat/rooms` 구현 시 함께 정리.  | 🟡     | ✅ 완료 (step 1) |
-| **`match.offer.created` 발행자 확인**       | §3.3 — `MatchDispatcher`에서 발행하는지 별도 확인 필요.                   | 🟡     | ✅ 확인 (step 3) — `MatchDispatcher.java:38` |
-| **환불 후 completedCount 오염**             | §3.4 — 환불 시 HelpRequest 상태·가이드 통계 정책 결정 필요.               | 🟡     | ⏳ 미해결 |
+| **`start_at` 정책 명시**                    | 필드만 있고 매칭 타이밍에 미반영.                                         | 🟡     | ⏳ 미해결                                      |
+| **`ChatController` 경로 혼재**              | §3.2 — `/requests/*` 네임스페이스 공유. `/chat/rooms` 구현 시 함께 정리.  | 🟡     | ✅ 완료 (step 1)                               |
+| **`match.offer.created` 발행자 확인**       | §3.3 — `MatchDispatcher`에서 발행하는지 별도 확인 필요.                   | 🟡     | ✅ 확인 (step 3) — `MatchDispatcher.java:38`   |
+| **환불 후 completedCount 오염**             | §3.4 — 환불 시 HelpRequest 상태·가이드 통계 정책 결정 필요.               | 🟡     | ⏳ 미해결                                      |
 
 ---
 
