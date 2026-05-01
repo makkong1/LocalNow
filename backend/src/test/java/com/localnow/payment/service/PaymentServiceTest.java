@@ -137,6 +137,43 @@ class PaymentServiceTest {
     }
 
     @Test
+    void capture_succeeds_when_request_is_in_progress() {
+        PaymentIntent intent = buildIntent(1L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.AUTHORIZED);
+        intent.setAuthorizationId("auth-abc");
+        when(paymentIntentRepository.findByRequestId(1L)).thenReturn(Optional.of(intent));
+
+        HelpRequest request = buildRequest(1L, 10L, HelpRequestStatus.IN_PROGRESS, RequestType.GUIDE, 10000L);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+
+        when(paymentGateway.capture("auth-abc"))
+                .thenReturn(new PaymentGateway.CaptureResult("cap-xyz", true));
+        when(paymentIntentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(helpRequestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentIntentResponse response = paymentService.capture(1L, 10L);
+
+        assertThat(response.status()).isEqualTo(PaymentStatus.CAPTURED);
+        verify(helpRequestRepository).save(any(HelpRequest.class));
+    }
+
+    @Test
+    void capture_throws_409_when_request_is_matched_not_in_progress() {
+        PaymentIntent intent = buildIntent(1L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.AUTHORIZED);
+        intent.setAuthorizationId("auth-abc");
+        when(paymentIntentRepository.findByRequestId(1L)).thenReturn(Optional.of(intent));
+
+        HelpRequest request = buildRequest(1L, 10L, HelpRequestStatus.MATCHED, RequestType.GUIDE, 10000L);
+        when(helpRequestRepository.findById(1L)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> paymentService.capture(1L, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(paymentGateway, never()).capture(anyString());
+    }
+
+    @Test
     void capture_throws_PAYMENT_INVALID_STATE_when_status_is_not_authorized() {
         PaymentIntent intent = buildIntent(1L, 1L, 10L, 20L, 10000L, 1500L, PaymentStatus.CAPTURED);
         when(paymentIntentRepository.findByRequestId(1L)).thenReturn(Optional.of(intent));

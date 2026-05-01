@@ -82,7 +82,7 @@ public class GuideController {
     @DeleteMapping("/certifications/{id}")
     @PreAuthorize("hasRole('GUIDE')")
     public ResponseEntity<ApiResponse<Void>> deleteCertification(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             Authentication authentication) {
 
         Long guideId = (Long) authentication.getPrincipal();

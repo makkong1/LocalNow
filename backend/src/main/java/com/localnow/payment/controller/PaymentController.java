@@ -39,7 +39,7 @@ public class PaymentController {
 
     @PostMapping("/{requestId}/capture")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> capture(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(paymentService.capture(requestId, userId)));
@@ -47,7 +47,7 @@ public class PaymentController {
 
     @PostMapping("/{requestId}/refund")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> refund(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(paymentService.refund(requestId, userId)));
@@ -55,7 +55,7 @@ public class PaymentController {
 
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<PaymentIntentResponse>> get(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         UserRole role = AuthenticationUserRoles.resolveUserRole(authentication);

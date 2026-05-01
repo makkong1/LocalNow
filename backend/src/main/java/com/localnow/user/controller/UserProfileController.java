@@ -50,7 +50,7 @@ public class UserProfileController {
 
     @GetMapping("/{userId}/profile")
     public ResponseEntity<ApiResponse<PublicProfileResponse>> getPublicProfile(
-            @PathVariable Long userId) {
+            @PathVariable("userId") Long userId) {
         return ResponseEntity.ok(ApiResponse.ok(userService.getPublicProfile(userId)));
     }
 }

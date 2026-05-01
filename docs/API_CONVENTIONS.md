@@ -87,19 +87,24 @@ LocalNow 백엔드의 단일 공식 외부 계약 문서. 소비자는 (1) Next.
 | GET  | `/requests/me` | 인증 | 여행자 기준 “내 요청”. `travelerId = sub` 로 필터 — 가이드 토큰이면 보통 빈 목록(403 은 하지 않음) |
 | GET  | `/requests/open` | GUIDE | `OPEN` 상태 요청만 cursor 페이징 |
 | GET  | `/requests/{id}` | 인증 | 요청 단건. TRAVELER=본인만, GUIDE=OPEN 이거나 본인이 offer 를 낸 경우 |
+| DELETE | `/requests/{id}` | TRAVELER | 요청 취소. COMPLETED/CANCELLED 상태이면 409 |
 | POST | `/requests/{id}/accept` | GUIDE | 요청 수락. body: `{message?}`. 멱등 — 동일 guideId 재호출 시 기존 offer 반환 |
 | POST | `/requests/{id}/confirm` | TRAVELER | 가이드 1명 확정. body: `{guideId}`. Redis 분산락으로 중복 확정 차단 |
+| POST | `/requests/{id}/start` | GUIDE | 서비스 시작 신고 (현장 도착). MATCHED → IN_PROGRESS 전이. CONFIRMED offer 를 가진 가이드만 호출 가능 |
 | GET  | `/requests/{id}/offers` | 인증 | TRAVELER=해당 요청의 traveler 만, GUIDE=OPEN 이거나 본인이 offer 를 낸 경우 |
-| GET  | `/requests/{id}/room` | 인증 | 매칭된 채팅방 조회 |
 | POST | `/requests/{id}/review` | TRAVELER | 리뷰 작성 (요청이 COMPLETED 상태일 때). body: `{rating, comment?}` |
 
 ### 매칭 (`/requests` 하위, match 도메인 처리)
 `/requests/{id}/accept` 와 `/requests/{id}/confirm` 참조. 별도 `/matches` 경로 없음.
 
-### 채팅 (`/rooms`)
+### 채팅 (`/chat`)
 | 메서드 | 경로 | 역할 | 설명 |
 |--------|------|------|------|
-| GET | `/rooms/{roomId}/messages` | 인증(방 참여자) | 메시지 히스토리 (cursor 페이징) |
+| GET | `/chat/rooms` | 인증 | 내가 참여한 채팅방 목록. 상대방 이름·마지막 메시지 미리보기 포함 (`ChatRoomSummaryResponse`) |
+| GET | `/chat/requests/{requestId}/room` | 인증(방 참여자) | 요청 ID로 채팅방 조회 (`ChatRoomResponse`) |
+| GET | `/chat/rooms/{roomId}/messages` | 인증(방 참여자) | 메시지 히스토리 (cursor 페이징) |
+
+`ChatRoomSummaryResponse` 필드: `{roomId, requestId, requestType, partnerName, lastMessagePreview, lastMessageAt}`.
 
 STOMP 실시간 채널은 아래 "WebSocket (STOMP) 채널 규약" 참조.
 
