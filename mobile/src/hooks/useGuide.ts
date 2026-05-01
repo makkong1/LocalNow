@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
-import type { GuideActiveOfferResponse } from '../types/api';
+import type { GuideActiveOfferResponse, BaseLocationResponse } from '../types/api';
 
 export function useSetDuty() {
   return useMutation({
@@ -34,5 +34,27 @@ export function useGuideActiveOffer(options?: { enabled?: boolean }) {
       return res.data;
     },
     enabled: options?.enabled !== false,
+  });
+}
+
+export function useGuideBaseLocation() {
+  return useQuery<BaseLocationResponse | null>({
+    queryKey: ['guide', 'base-location'],
+    queryFn: async () => {
+      const res = await apiFetch<BaseLocationResponse>('/guide/me/base-location');
+      if (!res.success) return null;
+      return res.data ?? null;
+    },
+  });
+}
+
+export function useSaveGuideBaseLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { lat: number; lng: number }) => {
+      const res = await apiFetch<void>('/guide/me/base-location', { method: 'PUT', body });
+      if (!res.success) throw res.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['guide', 'base-location'] }),
   });
 }

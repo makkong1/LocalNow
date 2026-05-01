@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
+import * as Location from "expo-location";
 import { useOpenRequests } from "../hooks/useRequests";
 import { useAcceptRequest, useStartService } from "../hooks/useMatches";
 import { useChatRoom } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
-import { useSetDuty, useGuideActiveOffer } from "../hooks/useGuide";
+import { useSetDuty, useGuideActiveOffer, useGuideBaseLocation } from "../hooks/useGuide";
 import OnDutyToggle from "../components/OnDutyToggle";
 import RequestCard from "../components/RequestCard";
 import StatusBadge from "../components/StatusBadge";
@@ -70,12 +71,32 @@ function OpenRequestsView({
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<RequestType | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>(null);
+  const [gpsLoc, setGpsLoc] = useState<{ lat: number; lng: number } | null>(null);
   const acceptRequest = useAcceptRequest();
+  const { data: baseLoc } = useGuideBaseLocation();
+
+  useEffect(() => {
+    if (baseLoc) return;
+    Location.requestForegroundPermissionsAsync().then(({ status }) => {
+      if (status !== "granted") return;
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      }).then((pos) => {
+        setGpsLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      });
+    });
+  }, [baseLoc]);
+
+  const searchLoc = baseLoc ?? gpsLoc ?? null;
+
   const { data: requestsPage, isLoading } = useOpenRequests({
     enabled: true,
     refetchInterval: 10000,
     requestType: selectedType,
     sortBy,
+    lat: searchLoc?.lat,
+    lng: searchLoc?.lng,
+    radiusKm: 5.0,
   });
   const openRequests = requestsPage?.items ?? [];
 

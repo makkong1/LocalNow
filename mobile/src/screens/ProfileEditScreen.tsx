@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -21,13 +22,171 @@ import {
   useUploadCertification,
   useDeleteCertification,
 } from '../hooks/useProfileSetup';
+import { useGuideBaseLocation, useSaveGuideBaseLocation } from '../hooks/useGuide';
 import { apiFetch } from '../lib/api-client';
+import LocationMap from '../components/LocationMap';
 import type { UserProfileResponse } from '../types/api';
+
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+
+interface NominatimResult {
+  lat: string;
+  lon: string;
+  display_name: string;
+}
+
+function BaseLocationModal({
+  visible,
+  initialLat,
+  initialLng,
+  onSave,
+  onDismiss,
+}: {
+  visible: boolean;
+  initialLat: number | null;
+  initialLng: number | null;
+  onSave: () => void;
+  onDismiss: () => void;
+}) {
+  const [lat, setLat] = useState(initialLat ?? 37.5665);
+  const [lng, setLng] = useState(initialLng ?? 126.978);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const save = useSaveGuideBaseLocation();
+
+  async function handleSearch() {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setIsSearching(true);
+    setSearchResults([]);
+    try {
+      const params = new URLSearchParams({ q, format: 'json', limit: '5', 'accept-language': 'ko,en' });
+      const res = await fetch(`${NOMINATIM_URL}?${params}`, {
+        headers: { 'User-Agent': 'LocalNow/1.0 (contact: localnow@example.com)' },
+      });
+      const data: NominatimResult[] = await res.json();
+      setSearchResults(data);
+    } catch {
+      // ignore search errors silently
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  async function handleSave() {
+    save.mutate(
+      { lat, lng },
+      {
+        onSuccess: onSave,
+        onError: (err: unknown) => {
+          const msg =
+            err && typeof err === 'object' && 'message' in err
+              ? String((err as { message: unknown }).message)
+              : '저장에 실패했습니다.';
+          Alert.alert('거점 저장 실패', msg);
+        },
+      },
+    );
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
+      <View style={modalStyles.container}>
+        <View style={modalStyles.header}>
+          <Text style={modalStyles.title}>활동 거점 설정</Text>
+          <TouchableOpacity onPress={onDismiss} testID="base-loc-cancel">
+            <Text style={modalStyles.cancelText}>취소</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={modalStyles.searchRow}>
+          <TextInput
+            style={modalStyles.searchInput}
+            placeholder="주소 검색"
+            placeholderTextColor="#525252"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
+            testID="base-loc-search-input"
+          />
+          <TouchableOpacity
+            style={modalStyles.searchBtn}
+            onPress={handleSearch}
+            disabled={isSearching}
+            testID="base-loc-search-button"
+          >
+            {isSearching ? (
+              <ActivityIndicator color="#0a0a0a" size="small" />
+            ) : (
+              <Text style={modalStyles.searchBtnText}>검색</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {searchResults.length > 0 && (
+          <ScrollView
+            style={modalStyles.resultsList}
+            keyboardShouldPersistTaps="handled"
+          >
+            {searchResults.map((r, i) => (
+              <TouchableOpacity
+                key={i}
+                style={modalStyles.resultItem}
+                onPress={() => {
+                  setLat(parseFloat(r.lat));
+                  setLng(parseFloat(r.lon));
+                  setSearchQuery(r.display_name);
+                  setSearchResults([]);
+                }}
+              >
+                <Text style={modalStyles.resultText} numberOfLines={2}>
+                  {r.display_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={modalStyles.mapContainer}>
+          <LocationMap
+            lat={lat}
+            lng={lng}
+            onLocationChange={(newLat, newLng) => {
+              setLat(newLat);
+              setLng(newLng);
+            }}
+          />
+        </View>
+
+        <View style={modalStyles.footer}>
+          <Text style={modalStyles.coordText}>
+            {lat.toFixed(5)}, {lng.toFixed(5)}
+          </Text>
+          <TouchableOpacity
+            style={[modalStyles.saveBtn, save.isPending && modalStyles.saveBtnDisabled]}
+            onPress={handleSave}
+            disabled={save.isPending}
+            testID="base-loc-save-button"
+          >
+            {save.isPending ? (
+              <ActivityIndicator color="#0a0a0a" size="small" />
+            ) : (
+              <Text style={modalStyles.saveBtnText}>저장</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation();
   const { role } = useAuth();
   const [certName, setCertName] = useState('');
+  const [showBaseLocModal, setShowBaseLocModal] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['auth', 'me'],
@@ -38,6 +197,7 @@ export default function ProfileEditScreen() {
     },
   });
 
+  const { data: baseLoc } = useGuideBaseLocation();
   const { data: certs, isLoading: certsLoading } = useMyCertifications();
   const uploadImageMutation = useUpdateProfileImage();
   const uploadCertMutation = useUploadCertification();
@@ -166,6 +326,31 @@ export default function ProfileEditScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Base Location Section — GUIDE only */}
+      {role === 'GUIDE' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>활동 거점</Text>
+          <Text style={styles.baseLocText} testID="base-loc-display">
+            {baseLoc ? `${baseLoc.lat.toFixed(4)}, ${baseLoc.lng.toFixed(4)}` : '미설정'}
+          </Text>
+          <TouchableOpacity
+            style={styles.setLocBtn}
+            onPress={() => setShowBaseLocModal(true)}
+            testID="set-base-location-button"
+          >
+            <Text style={styles.setLocBtnText}>거점 설정</Text>
+          </TouchableOpacity>
+          <BaseLocationModal
+            key={showBaseLocModal ? 'open' : 'closed'}
+            visible={showBaseLocModal}
+            initialLat={baseLoc?.lat ?? null}
+            initialLng={baseLoc?.lng ?? null}
+            onSave={() => setShowBaseLocModal(false)}
+            onDismiss={() => setShowBaseLocModal(false)}
+          />
+        </View>
+      )}
 
       {/* Certifications Section — GUIDE only */}
       {role === 'GUIDE' && (
@@ -326,6 +511,22 @@ const styles = StyleSheet.create({
   bioInput: {
     minHeight: 72,
   },
+  baseLocText: {
+    color: '#a3a3a3',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  setLocBtn: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  setLocBtnText: {
+    color: '#0a0a0a',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   certRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -384,5 +585,110 @@ const styles = StyleSheet.create({
   },
   certsLoader: {
     marginVertical: 12,
+  },
+});
+
+const modalStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+    paddingTop: 48,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  title: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelText: {
+    color: '#f59e0b',
+    fontSize: 14,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  searchBtn: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 56,
+  },
+  searchBtnText: {
+    color: '#0a0a0a',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  resultsList: {
+    maxHeight: 160,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: '#141414',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  resultItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#262626',
+  },
+  resultText: {
+    color: '#e5e5e5',
+    fontSize: 13,
+  },
+  mapContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  footer: {
+    padding: 16,
+    gap: 8,
+  },
+  coordText: {
+    color: '#525252',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  saveBtn: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  saveBtnDisabled: {
+    backgroundColor: '#404040',
+  },
+  saveBtnText: {
+    color: '#0a0a0a',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
