@@ -7,7 +7,8 @@
       "name": "backend-spatial-migration",
       "status": "completed",
       "started_at": "2026-05-01T15:56:51+0900",
-      "summary": "V12 Flyway(POINT STORED + SPATIAL INDEX), GeoUtils.boundingBox, HelpRequestRepository.findNearbyOpen, Testcontainers 통합 테스트 추가"
+      "summary": "V12 Flyway(POINT STORED + SPATIAL INDEX), GeoUtils.boundingBox, HelpRequestRepository.findNearbyOpen, Testcontainers 통합 테스트 추가",
+      "completed_at": "2026-05-01T16:04:35+0900"
     },
     {
       "step": 1,
