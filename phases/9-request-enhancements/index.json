@@ -21,10 +21,10 @@
     {
       "step": 2,
       "name": "mobile-filter-sort",
-      "status": "error",
-      "started_at": "2026-05-01T22:12:57+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-05-01T22:13:07+0900"
+      "status": "completed",
+      "started_at": "2026-05-02T01:31:11+0900",
+      "summary": "GuideScreen에 requestType 필터 칩, sortBy 정렬 토글 UI 추가. useOpenRequests 옵션 확장",
+      "completed_at": "2026-05-02T02:00:00+0900"
     },
     {
       "step": 3,

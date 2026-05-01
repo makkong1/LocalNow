@@ -17,7 +17,7 @@ import { useSetDuty, useGuideActiveOffer } from "../hooks/useGuide";
 import OnDutyToggle from "../components/OnDutyToggle";
 import RequestCard from "../components/RequestCard";
 import StatusBadge from "../components/StatusBadge";
-import type { GuideActiveOfferResponse } from "../types/api";
+import type { GuideActiveOfferResponse, RequestType } from "../types/api";
 import type { AppStackParamList } from "../navigation/AppNavigator";
 
 function OnDutyOffView({
@@ -38,6 +38,28 @@ function OnDutyOffView({
   );
 }
 
+type SortOption = 'budgetAsc' | 'budgetDesc' | null;
+
+const FILTER_CHIPS: { label: string; value: RequestType | null }[] = [
+  { label: '전체', value: null },
+  { label: '가이드', value: 'GUIDE' },
+  { label: '통역', value: 'TRANSLATION' },
+  { label: '음식', value: 'FOOD' },
+  { label: '긴급', value: 'EMERGENCY' },
+];
+
+function nextSort(current: SortOption): SortOption {
+  if (current === null) return 'budgetAsc';
+  if (current === 'budgetAsc') return 'budgetDesc';
+  return null;
+}
+
+function sortLabel(s: SortOption): string {
+  if (s === 'budgetAsc') return '↑가격';
+  if (s === 'budgetDesc') return '↓가격';
+  return '기본';
+}
+
 function OpenRequestsView({
   onToggle,
   isTogglerLoading,
@@ -46,10 +68,14 @@ function OpenRequestsView({
   isTogglerLoading: boolean;
 }) {
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<RequestType | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>(null);
   const acceptRequest = useAcceptRequest();
   const { data: requestsPage, isLoading } = useOpenRequests({
     enabled: true,
     refetchInterval: 10000,
+    requestType: selectedType,
+    sortBy,
   });
   const openRequests = requestsPage?.items ?? [];
 
@@ -74,6 +100,37 @@ function OpenRequestsView({
         onToggle={onToggle}
         isLoading={isTogglerLoading}
       />
+      <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipList}
+          style={styles.chipScroll}
+        >
+          {FILTER_CHIPS.map((chip) => {
+            const active = selectedType === chip.value;
+            return (
+              <TouchableOpacity
+                key={chip.label}
+                testID={`filter-chip-${chip.label}`}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => setSelectedType(chip.value)}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        <TouchableOpacity
+          testID="sort-toggle"
+          style={styles.sortButton}
+          onPress={() => setSortBy(nextSort(sortBy))}
+        >
+          <Text style={styles.sortButtonText}>{sortLabel(sortBy)}</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.sectionLabel}>주변 도움 요청</Text>
       {isLoading ? (
         <ActivityIndicator color="#f59e0b" style={styles.loader} />
@@ -331,6 +388,52 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 12,
+  },
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  chipScroll: {
+    flex: 1,
+  },
+  chipList: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  chipActive: {
+    backgroundColor: "#f59e0b",
+    borderColor: "#f59e0b",
+  },
+  chipText: {
+    color: "#a3a3a3",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  chipTextActive: {
+    color: "#000",
+  },
+  sortButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    marginLeft: 8,
+  },
+  sortButtonText: {
+    color: "#a3a3a3",
+    fontSize: 13,
+    fontWeight: "500",
   },
   loader: { marginVertical: 24 },
   emptyBox: {
