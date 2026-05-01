@@ -25,7 +25,7 @@ public class RabbitPublisher {
         try {
             String json = objectMapper.writeValueAsString(payload);
             rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, routingKey, json);
-            log.info("Published message to RabbitMQ: routingKey={}, payload={}", routingKey, payload);
+            log.info("reason=RABBIT_MESSAGE_PUBLISHED ko=RabbitMQ 메시지 발행 완료 routingKey={} payload={}", routingKey, payload);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize message payload", e);
         }

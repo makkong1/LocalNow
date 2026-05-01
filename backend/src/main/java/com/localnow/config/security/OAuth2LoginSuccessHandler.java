@@ -54,7 +54,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         Object uid = oAuth2User.getAttribute(OAuth2UserResponseMapper.ATTR_LOCAL_USER_ID);
         Object role = oAuth2User.getAttribute(OAuth2UserResponseMapper.ATTR_LOCAL_ROLE);
         if (uid == null || role == null) {
-            log.error("OAuth2 principal missing local attributes: uid={} role={} attrs={}",
+            log.error("reason=OAUTH2_PRINCIPAL_ATTR_MISSING ko=OAuth2 인증 사용자 로컬 속성 누락 uid={} role={} attrs={}",
                     uid, role, oAuth2User.getAttributes().keySet());
             // sendError(500) 는 /error 로 ERROR dispatch → 인증 302 루프를 피하고 실패 콜백으로 보낸다
             String base = resolveFailureBase(request);
@@ -63,7 +63,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             getRedirectStrategy().sendRedirect(request, response, base + sep + "oauth2Error=" + enc);
             return;
         }
-        log.debug("OAuth2 login success: userId={} role={}", uid, role);
+        log.debug("reason=OAUTH2_LOGIN_SUCCESS ko=OAuth2 로그인 성공 userId={} role={}", uid, role);
         String token = jwtProvider.generateToken((Long) uid, (String) role);
         String enc = URLEncoder.encode(token, StandardCharsets.UTF_8);
         String base = resolveSuccessBase(request);

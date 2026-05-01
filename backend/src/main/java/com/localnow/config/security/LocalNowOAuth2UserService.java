@@ -57,7 +57,8 @@ public class LocalNowOAuth2UserService extends DefaultOAuth2UserService {
         } catch (OAuth2AuthenticationException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Failed to find or create local user for GitHub id={} email={}", providerUserId, email, e);
+            log.error("reason=GITHUB_LOCAL_USER_UPSERT_FAILED ko=GitHub 사용자 로컬 계정 조회/생성 실패 providerUserId={} email={}",
+                    providerUserId, email, e);
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("user_service_error", "Internal error while processing GitHub login", null));
         }

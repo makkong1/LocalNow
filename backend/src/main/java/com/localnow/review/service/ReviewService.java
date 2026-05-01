@@ -115,7 +115,7 @@ public class ReviewService {
         }
         int updated = userRepository.incrementRating(guideId, newRating);
         if (updated == 0) {
-            log.warn("incrementRating: guideId={} not found", guideId);
+            log.warn("reason=GUIDE_RATING_TARGET_NOT_FOUND ko=가이드 평점 집계 대상 사용자 없음 guideId={}", guideId);
         }
     }
 

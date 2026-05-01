@@ -33,7 +33,8 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(NoResourceFoundException.class)
         public ResponseEntity<ApiResponse<?>> handleNoResource(NoResourceFoundException ex) {
                 if (log.isDebugEnabled()) {
-                        log.debug("No static resource: {}", ex.getResourcePath());
+                        log.debug("reason=STATIC_RESOURCE_NOT_FOUND ko=정적 리소스를 찾을 수 없음 resourcePath={}",
+                                        ex.getResourcePath());
                 }
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                                 .body(ApiResponse.fail(ErrorCode.NOT_FOUND,
@@ -42,7 +43,7 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
         public ResponseEntity<ApiResponse<?>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
-                log.warn("Optimistic lock conflict: {}", ex.getMessage());
+                log.warn("reason=OPTIMISTIC_LOCK_CONFLICT ko=낙관적 락 충돌 발생 message={}", ex.getMessage());
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                                 .body(ApiResponse.fail(ErrorCode.OPTIMISTIC_LOCK_CONFLICT,
                                                 ErrorCode.OPTIMISTIC_LOCK_CONFLICT.getDefaultMessage()));
@@ -73,7 +74,7 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ApiResponse<?>> handleGeneral(Exception ex) {
-                log.error("Unhandled exception", ex);
+                log.error("reason=UNHANDLED_EXCEPTION ko=처리되지 않은 예외 발생", ex);
                 return ResponseEntity.status(500)
                                 .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR,
                                                 ErrorCode.INTERNAL_ERROR.getDefaultMessage()));

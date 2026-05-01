@@ -34,7 +34,7 @@ public class ChatNotificationListener {
                 handleChatMessageSent(payload);
             }
         } catch (Exception e) {
-            log.error("Failed to process chat event: routingKey={}", routingKey, e);
+            log.error("reason=CHAT_EVENT_PROCESSING_FAILED ko=채팅 이벤트 처리 실패 routingKey={}", routingKey, e);
         }
     }
 
@@ -51,7 +51,7 @@ public class ChatNotificationListener {
             messagingTemplate.convertAndSend("/topic/users/" + receiverId,
                     Map.of("type", "CHAT_MESSAGE", "roomId", roomId, "preview", preview != null ? preview : ""));
         } catch (Exception e) {
-            log.warn("Failed to push chat message to user {}", receiverId, e);
+            log.warn("reason=CHAT_PUSH_FAILED ko=채팅 메시지 실시간 전송 실패 receiverId={}", receiverId, e);
         }
     }
 

@@ -37,10 +37,10 @@ public class MatchNotificationListener {
                 case "match.offer.created" -> handleOfferCreated(payload);
                 case "match.offer.accepted" -> handleOfferAccepted(payload);
                 case "match.confirmed" -> handleMatchConfirmed(payload);
-                default -> log.debug("Unhandled match routing key: {}", routingKey);
+                default -> log.debug("reason=UNHANDLED_MATCH_ROUTING_KEY ko=처리되지 않은 매칭 라우팅 키 routingKey={}", routingKey);
             }
         } catch (JsonProcessingException | RuntimeException e) {
-            log.error("Failed to process match event: routingKey={}", routingKey, e);
+            log.error("reason=MATCH_EVENT_PROCESSING_FAILED ko=매칭 이벤트 처리 실패 routingKey={}", routingKey, e);
         }
     }
 
@@ -65,7 +65,7 @@ public class MatchNotificationListener {
             try {
                 messagingTemplate.convertAndSend("/topic/guides/" + guideId, push);
             } catch (RuntimeException e) {
-                log.warn("Failed to push to guide {}", guideId, e);
+                log.warn("reason=GUIDE_PUSH_FAILED ko=가이드에게 요청 알림 전송 실패 guideId={}", guideId, e);
             }
         }
     }
@@ -78,7 +78,7 @@ public class MatchNotificationListener {
             messagingTemplate.convertAndSend("/topic/requests/" + requestId,
                     Map.of("type", "OFFER_ACCEPTED", "guideId", guideId));
         } catch (RuntimeException e) {
-            log.warn("Failed to push offer accepted for request {}", requestId, e);
+            log.warn("reason=REQUEST_PUSH_OFFER_ACCEPTED_FAILED ko=오퍼 수락 알림 전송 실패 requestId={}", requestId, e);
         }
     }
 
@@ -90,7 +90,7 @@ public class MatchNotificationListener {
             messagingTemplate.convertAndSend("/topic/guides/" + confirmedGuideId,
                     Map.of("type", "MATCH_CONFIRMED", "requestId", requestId));
         } catch (RuntimeException e) {
-            log.warn("Failed to push match confirmed to guide {}", confirmedGuideId, e);
+            log.warn("reason=GUIDE_PUSH_MATCH_CONFIRMED_FAILED ko=매칭 확정 알림 전송 실패 confirmedGuideId={}", confirmedGuideId, e);
         }
     }
 
