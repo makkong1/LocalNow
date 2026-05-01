@@ -133,6 +133,7 @@ public class PaymentService {
 
         HelpRequest request = helpRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+        // Allows both MATCHED→COMPLETED (direct) and IN_PROGRESS→COMPLETED (after /start called)
         request.toCompleted();
         helpRequestRepository.save(request);
 

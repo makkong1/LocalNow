@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.common.ErrorCode;
+import com.localnow.match.domain.MatchOfferStatus;
 import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
 import com.localnow.request.domain.HelpRequestStatus;
@@ -114,6 +115,31 @@ public class RequestService {
         }
 
         return new HelpRequestPageResponse(items.stream().map(this::toResponse).toList(), nextCursor);
+    }
+
+    @Transactional
+    public HelpRequestResponse startRequest(@NonNull Long requestId, @NonNull Long guideId) {
+        HelpRequest request = repository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        ErrorCode.REQUEST_NOT_FOUND.getDefaultMessage()));
+
+        boolean isConfirmedGuide = matchOfferRepository.findByRequestIdAndGuideId(requestId, guideId)
+                .map(offer -> offer.getStatus() == MatchOfferStatus.CONFIRMED)
+                .orElse(false);
+
+        if (!isConfirmedGuide) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    ErrorCode.AUTH_FORBIDDEN.getDefaultMessage());
+        }
+
+        try {
+            request.toInProgress();
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    ErrorCode.PAYMENT_INVALID_STATE.getDefaultMessage());
+        }
+
+        return toResponse(repository.save(request));
     }
 
     @Transactional
