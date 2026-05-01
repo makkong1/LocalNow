@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-05-01T22:09:47+0900",
       "summary": "V13 Flyway(users.base_lat/base_lng), GuideProfileService, PUT/GET /guide/me/base-location 엔드포인트 추가",
-      "completed_at": "2026-05-01T22:30:00+0900"
+      "completed_at": "2026-05-01T22:12:57+0900"
     },
     {
       "step": 2,
