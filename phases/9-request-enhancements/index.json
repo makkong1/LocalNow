@@ -7,7 +7,8 @@
       "name": "backend-filter-sort",
       "status": "completed",
       "started_at": "2026-05-01T22:05:14+0900",
-      "summary": "GET /requests/open에 requestType 필터, sortBy, lat/lng/radiusKm 파라미터 추가. 위치 있으면 SPATIAL 검색, 없으면 커서 페이지네이션 유지"
+      "summary": "GET /requests/open에 requestType 필터, sortBy, lat/lng/radiusKm 파라미터 추가. 위치 있으면 SPATIAL 검색, 없으면 커서 페이지네이션 유지",
+      "completed_at": "2026-05-01T22:09:47+0900"
     },
     {
       "step": 1,
