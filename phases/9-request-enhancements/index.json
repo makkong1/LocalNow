@@ -24,7 +24,7 @@
       "status": "completed",
       "started_at": "2026-05-02T01:31:11+0900",
       "summary": "GuideScreen에 requestType 필터 칩, sortBy 정렬 토글 UI 추가. useOpenRequests 옵션 확장",
-      "completed_at": "2026-05-02T02:00:00+0900"
+      "completed_at": "2026-05-02T01:33:04+0900"
     },
     {
       "step": 3,
