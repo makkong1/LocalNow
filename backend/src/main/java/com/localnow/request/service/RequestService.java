@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.localnow.common.ErrorCode;
+import com.localnow.common.GeoUtils;
 import com.localnow.match.domain.MatchOfferStatus;
 import com.localnow.match.repository.MatchOfferRepository;
 import com.localnow.request.domain.HelpRequest;
@@ -140,6 +141,16 @@ public class RequestService {
         }
 
         return toResponse(repository.save(request));
+    }
+
+    public List<HelpRequest> findNearbyOpenRequests(double lat, double lng, double radiusKm) {
+        GeoUtils.Mbr mbr = GeoUtils.boundingBox(lat, lng, radiusKm);
+        double radiusM = radiusKm * 1000.0;
+        return repository.findNearbyOpen(
+                lat, lng,
+                mbr.latMin(), mbr.lngMin(),
+                mbr.latMax(), mbr.lngMax(),
+                radiusM);
     }
 
     @Transactional

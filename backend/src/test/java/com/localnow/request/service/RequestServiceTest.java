@@ -1,5 +1,6 @@
 package com.localnow.request.service;
 
+import com.localnow.common.GeoUtils;
 import com.localnow.infra.rabbit.RabbitPublisher;
 import com.localnow.infra.redis.RedisGeoService;
 import com.localnow.match.domain.MatchOffer;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -56,6 +58,7 @@ class RequestServiceTest {
     void setUp() {
         requestService = new RequestService(repository, eventPublisher, matchOfferRepository);
         matchDispatcher = new MatchDispatcher(redisGeoService, rabbitPublisher);
+        ReflectionTestUtils.setField(matchDispatcher, "searchRadiusKm", 5.0);
     }
 
     @Test
@@ -257,6 +260,75 @@ class RequestServiceTest {
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void findNearbyOpenRequests_delegates_mbr_and_radius_to_repository() {
+        double lat = 37.5665, lng = 126.978, radiusKm = 3.0;
+        GeoUtils.Mbr mbr = GeoUtils.boundingBox(lat, lng, radiusKm);
+        double radiusM = radiusKm * 1000.0;
+
+        HelpRequest r = buildRequest(1L, 42L, RequestType.GUIDE, HelpRequestStatus.OPEN, 10000L);
+        when(repository.findNearbyOpen(
+                eq(lat), eq(lng),
+                eq(mbr.latMin()), eq(mbr.lngMin()),
+                eq(mbr.latMax()), eq(mbr.lngMax()),
+                eq(radiusM)))
+                .thenReturn(List.of(r));
+
+        List<HelpRequest> result = requestService.findNearbyOpenRequests(lat, lng, radiusKm);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
+        verify(repository).findNearbyOpen(
+                eq(lat), eq(lng),
+                eq(mbr.latMin()), eq(mbr.lngMin()),
+                eq(mbr.latMax()), eq(mbr.lngMax()),
+                eq(radiusM));
+    }
+
+    @Test
+    void findNearbyOpenRequests_converts_km_to_meters_for_repository() {
+        double lat = 37.5665, lng = 126.978, radiusKm = 5.0;
+        GeoUtils.Mbr mbr = GeoUtils.boundingBox(lat, lng, radiusKm);
+
+        when(repository.findNearbyOpen(
+                anyDouble(), anyDouble(),
+                anyDouble(), anyDouble(),
+                anyDouble(), anyDouble(),
+                eq(5000.0)))
+                .thenReturn(List.of());
+
+        List<HelpRequest> result = requestService.findNearbyOpenRequests(lat, lng, radiusKm);
+
+        assertThat(result).isEmpty();
+        verify(repository).findNearbyOpen(
+                eq(lat), eq(lng),
+                eq(mbr.latMin()), eq(mbr.lngMin()),
+                eq(mbr.latMax()), eq(mbr.lngMax()),
+                eq(5000.0));
+    }
+
+    @Test
+    void matchDispatcher_uses_configured_search_radius() {
+        ReflectionTestUtils.setField(matchDispatcher, "searchRadiusKm", 10.0);
+        when(redisGeoService.searchNearby(anyDouble(), anyDouble(), eq(10.0)))
+                .thenReturn(List.of(10L));
+
+        matchDispatcher.onMatchDispatch(new MatchDispatchEvent(1L, "GUIDE", 37.5665, 126.9780, 5000L));
+
+        verify(redisGeoService).searchNearby(37.5665, 126.9780, 10.0);
+        verify(rabbitPublisher).publish(eq("match.offer.created"), any());
+    }
+
+    @Test
+    void matchDispatcher_default_radius_is_five_km() {
+        when(redisGeoService.searchNearby(anyDouble(), anyDouble(), eq(5.0)))
+                .thenReturn(List.of(99L));
+
+        matchDispatcher.onMatchDispatch(new MatchDispatchEvent(2L, "TRANSLATION", 37.5665, 126.9780, 3000L));
+
+        verify(redisGeoService).searchNearby(anyDouble(), anyDouble(), eq(5.0));
     }
 
     private MatchOffer buildOffer(Long id, Long guideId, MatchOfferStatus status) {
