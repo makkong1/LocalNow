@@ -30,6 +30,10 @@
       "dir": "7-payment-capture-guard",
       "status": "completed",
       "completed_at": "2026-05-01T10:24:14+0900"
+    },
+    {
+      "dir": "8-map-spatial-upgrade",
+      "status": "pending"
     }
   ]
 }

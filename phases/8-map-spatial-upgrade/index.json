@@ -1,0 +1,29 @@
+{
+  "project": "LocalNow",
+  "phase": "8-map-spatial-upgrade",
+  "steps": [
+    {
+      "step": 0,
+      "name": "backend-spatial-migration",
+      "status": "completed",
+      "started_at": "2026-05-01T15:56:51+0900",
+      "summary": "V12 Flyway(POINT STORED + SPATIAL INDEX), GeoUtils.boundingBox, HelpRequestRepository.findNearbyOpen, Testcontainers 통합 테스트 추가"
+    },
+    {
+      "step": 1,
+      "name": "backend-spatial-service",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "mobile-map-migration",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "docs-adr-update",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-05-01T15:56:51+0900"
+}
