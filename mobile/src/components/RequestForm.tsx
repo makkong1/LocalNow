@@ -6,7 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Platform,
+  Modal,
+  Pressable,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import type { CreateRequestBody, RequestType } from '../types/api';
 
 interface RequestFormProps {
@@ -18,7 +22,6 @@ interface RequestFormProps {
 
 const REQUEST_TYPES: RequestType[] = ['GUIDE', 'TRANSLATION', 'FOOD', 'EMERGENCY'];
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
-const START_OFFSET_OPTIONS = [30, 60, 120];
 
 const TYPE_LABELS: Record<RequestType, string> = {
   GUIDE: '가이드',
@@ -27,8 +30,15 @@ const TYPE_LABELS: Record<RequestType, string> = {
   EMERGENCY: '긴급',
 };
 
-function addMinutes(minutes: number): string {
-  return new Date(Date.now() + minutes * 60 * 1000).toISOString();
+function minutesFromNow(minutes: number): Date {
+  return new Date(Date.now() + minutes * 60 * 1000);
+}
+
+function formatStartAt(d: Date): string {
+  return new Intl.DateTimeFormat('ko-KR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(d);
 }
 
 export default function RequestForm({
@@ -39,9 +49,12 @@ export default function RequestForm({
 }: RequestFormProps) {
   const [requestType, setRequestType] = useState<RequestType>('GUIDE');
   const [description, setDescription] = useState('');
-  const [startOffset, setStartOffset] = useState(30);
+  /** 요청 시작 시각 (디바이스 로컬 → API는 ISO UTC) */
+  const [startAt, setStartAt] = useState(() => minutesFromNow(30));
   const [durationMin, setDurationMin] = useState(60);
   const [budget, setBudget] = useState('');
+
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const budgetNum = parseInt(budget, 10);
   const isValid = description.trim().length > 0 && !Number.isNaN(budgetNum) && budgetNum > 0;
@@ -53,10 +66,19 @@ export default function RequestForm({
       lat: initialLat,
       lng: initialLng,
       description: description.trim(),
-      startAt: addMinutes(startOffset),
+      startAt: startAt.toISOString(),
       durationMin,
       budgetKrw: budgetNum,
     });
+  }
+
+  function onPickDate(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS === 'android') setPickerOpen(false);
+    if (Platform.OS === 'android' && event.type === 'dismissed') return;
+    if (!date) return;
+    const minNow = Date.now();
+    if (date.getTime() < minNow - 15000) return;
+    setStartAt(date);
   }
 
   return (
@@ -90,20 +112,50 @@ export default function RequestForm({
       />
 
       <Text style={styles.label}>시작 시각</Text>
-      <View style={styles.row}>
-        {START_OFFSET_OPTIONS.map((mins) => (
-          <TouchableOpacity
-            key={mins}
-            testID={`start-${mins}`}
-            style={[styles.chipButton, startOffset === mins && styles.chipButtonActive]}
-            onPress={() => setStartOffset(mins)}
-          >
-            <Text style={[styles.chipText, startOffset === mins && styles.chipTextActive]}>
-              +{mins}분
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <TouchableOpacity
+        testID="start-at-picker-trigger"
+        style={styles.datetimeRow}
+        onPress={() => setPickerOpen(true)}
+      >
+        <Text style={styles.datetimeValue}>{formatStartAt(startAt)}</Text>
+        <Text style={styles.datetimeHint}>탭해서 날짜·시간 선택</Text>
+      </TouchableOpacity>
+
+      {/* iOS: 바텀시트에서 스피너로 선택, 완료로 닫기 */}
+      <Modal transparent visible={pickerOpen && Platform.OS === 'ios'} animationType="slide">
+        <View style={styles.modalRoot}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setPickerOpen(false)} accessibilityRole="button" />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setPickerOpen(false)}>
+                <Text style={styles.modalDone}>완료</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              testID="start-at-picker-ios"
+              value={startAt}
+              mode="datetime"
+              display="spinner"
+              minimumDate={new Date()}
+              onChange={(e, date) => onPickDate(e, date)}
+              locale="ko-KR"
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Android: 시스템 다이얼로그 */}
+      {pickerOpen && Platform.OS === 'android' ? (
+        <DateTimePicker
+          testID="start-at-picker-android"
+          value={startAt}
+          mode="datetime"
+          display="default"
+          minimumDate={new Date()}
+          onChange={(e, date) => onPickDate(e, date)}
+          locale="ko-KR"
+        />
+      ) : null}
 
       <Text style={styles.label}>소요 시간</Text>
       <View style={styles.row}>
@@ -114,9 +166,7 @@ export default function RequestForm({
             style={[styles.durationChip, durationMin === d && styles.chipButtonActive]}
             onPress={() => setDurationMin(d)}
           >
-            <Text style={[styles.chipText, durationMin === d && styles.chipTextActive]}>
-              {d}분
-            </Text>
+            <Text style={[styles.chipText, durationMin === d && styles.chipTextActive]}>{d}분</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -182,6 +232,51 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#000',
+    fontWeight: '600',
+  },
+  datetimeRow: {
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  datetimeValue: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  datetimeHint: {
+    color: '#737373',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  modalSheet: {
+    backgroundColor: '#171717',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#262626',
+  },
+  modalDone: {
+    color: '#f59e0b',
+    fontSize: 17,
     fontWeight: '600',
   },
   durationChip: {

@@ -35,6 +35,7 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
   const isCaptured = currentIntent?.status === 'CAPTURED';
   const isRefunded = currentIntent?.status === 'REFUNDED';
   const isFailed = currentIntent?.status === 'FAILED';
+  const isServiceStarted = request?.status === 'IN_PROGRESS';
 
   function handleCapture() {
     capturePayment.mutate(
@@ -50,11 +51,13 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
     if (isCaptured) return '결제 완료 ✓';
     if (isRefunded) return '환불됨';
     if (isFailed) return '결제 실패 — 다시 시도';
-    if (currentIntent?.status === 'AUTHORIZED') return '결제 대기중';
+    if (currentIntent?.status === 'AUTHORIZED') {
+      return isServiceStarted ? '서비스 완료 확인 및 결제' : '가이드 서비스 시작 대기 중';
+    }
     return '결제 완료 (Mock)';
   }
 
-  const isButtonDisabled = isCaptured || isRefunded || capturePayment.isPending;
+  const isButtonDisabled = isCaptured || isRefunded || capturePayment.isPending || !isServiceStarted;
 
   if (isLoading || createIntent.isPending) {
     return (
@@ -119,6 +122,10 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
       >
         <Text style={styles.captureButtonText}>{getButtonLabel()}</Text>
       </TouchableOpacity>
+
+      {!isServiceStarted && !isCaptured && !isRefunded && (
+        <Text style={styles.pendingNote}>가이드가 서비스를 시작하면 결제할 수 있습니다.</Text>
+      )}
 
       {isCaptured && (
         <Text style={styles.capturedNote}>이미 결제가 완료되었습니다.</Text>
@@ -222,6 +229,12 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
     fontSize: 15,
+  },
+  pendingNote: {
+    color: '#a3a3a3',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 12,
   },
   capturedNote: {
     color: '#22c55e',

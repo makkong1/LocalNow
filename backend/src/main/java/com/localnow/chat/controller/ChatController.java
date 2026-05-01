@@ -36,7 +36,7 @@ public class ChatController {
 
     @GetMapping("/requests/{requestId}/room")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> getRoom(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(chatService.getRoom(requestId, userId)));
@@ -44,7 +44,7 @@ public class ChatController {
 
     @GetMapping("/rooms/{roomId}/messages")
     public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getHistory(
-            @PathVariable @NonNull Long roomId,
+            @PathVariable("roomId") @NonNull Long roomId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(chatService.getHistory(roomId, userId)));

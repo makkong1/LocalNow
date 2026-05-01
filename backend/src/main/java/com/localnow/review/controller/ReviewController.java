@@ -31,7 +31,7 @@ public class ReviewController {
 
     @PostMapping("/requests/{requestId}/review")
     public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             @Valid @RequestBody @NonNull CreateReviewRequest body,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
@@ -41,9 +41,9 @@ public class ReviewController {
 
     @GetMapping("/users/{userId}/reviews")
     public ResponseEntity<ApiResponse<ReviewPageResponse>> getReviews(
-            @PathVariable @NonNull Long userId,
-            @RequestParam(required = false) @Nullable Long cursor,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable("userId") @NonNull Long userId,
+            @RequestParam(name = "cursor", required = false) @Nullable Long cursor,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         return ResponseEntity.ok(ApiResponse.ok(reviewService.getReviews(userId, cursor, size)));
     }
 }

@@ -25,6 +25,10 @@
       "dir": "5-chat-gaps",
       "status": "completed",
       "completed_at": "2026-05-01T12:55:00+0900"
+    },
+    {
+      "dir": "7-payment-capture-guard",
+      "status": "pending"
     }
   ]
 }

@@ -40,7 +40,7 @@ public class MatchController {
 
     @PostMapping("/{requestId}/accept")
     public ResponseEntity<ApiResponse<MatchOfferResponse>> accept(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             @RequestBody(required = false) @Nullable AcceptRequest body,
             Authentication authentication) {
         if (!isGuide(authentication)) {
@@ -54,7 +54,7 @@ public class MatchController {
 
     @PostMapping("/{requestId}/confirm")
     public ResponseEntity<ApiResponse<MatchOfferResponse>> confirm(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             @Valid @RequestBody @NonNull ConfirmRequest body,
             Authentication authentication) {
         if (!isTraveler(authentication)) {
@@ -68,7 +68,7 @@ public class MatchController {
 
     @GetMapping("/{requestId}/offers")
     public ResponseEntity<ApiResponse<List<MatchOfferResponse>>> getOffers(
-            @PathVariable @NonNull Long requestId,
+            @PathVariable("requestId") @NonNull Long requestId,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         UserRole role = resolveUserRole(authentication);

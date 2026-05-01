@@ -52,8 +52,8 @@ public class RequestController {
 
     @GetMapping("/open")
     public ResponseEntity<ApiResponse<HelpRequestPageResponse>> getOpenRequests(
-            @RequestParam(required = false) @Nullable Long cursor,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "cursor", required = false) @Nullable Long cursor,
+            @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         if (!isGuide(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -65,7 +65,7 @@ public class RequestController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HelpRequestResponse>> getRequest(
-            @PathVariable @NonNull Long id,
+            @PathVariable("id") @NonNull Long id,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         UserRole role = resolveUserRole(authentication);
@@ -75,7 +75,7 @@ public class RequestController {
 
     @PostMapping("/{id}/start")
     public ResponseEntity<ApiResponse<HelpRequestResponse>> startRequest(
-            @PathVariable @NonNull Long id,
+            @PathVariable("id") @NonNull Long id,
             Authentication authentication) {
         if (!isGuide(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -88,7 +88,7 @@ public class RequestController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> cancelRequest(
-            @PathVariable @NonNull Long id,
+            @PathVariable("id") @NonNull Long id,
             Authentication authentication) {
         if (!isTraveler(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -101,8 +101,8 @@ public class RequestController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<HelpRequestPageResponse>> getMyRequests(
-            @RequestParam(required = false) @Nullable Long cursor,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "cursor", required = false) @Nullable Long cursor,
+            @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         HelpRequestPageResponse response = requestService.getMyRequests(userId, cursor, size);
