@@ -29,10 +29,10 @@
     {
       "step": 3,
       "name": "in-progress-cleanup",
-      "status": "error",
+      "status": "completed",
       "started_at": "2026-05-01T00:58:05+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-05-01T00:58:27+0900"
+      "summary": "POST /requests/{id}/start 추가로 MATCHED→IN_PROGRESS 전이 완성(GUIDE 전용), PaymentService.capture()에 양방향 완료 경로 주석 추가, 테스트 3케이스 통과. match.offer.created 발행자 확인: MatchDispatcher.onMatchDispatch()에서 발행 중(발견)",
+      "completed_at": "2026-05-01T12:55:00+0900"
     }
   ],
   "created_at": "2026-05-01T00:48:12+0900"

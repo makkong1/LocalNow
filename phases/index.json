@@ -23,8 +23,8 @@
     },
     {
       "dir": "5-chat-gaps",
-      "status": "error",
-      "failed_at": "2026-05-01T00:58:28+0900"
+      "status": "completed",
+      "completed_at": "2026-05-01T12:55:00+0900"
     }
   ]
 }
