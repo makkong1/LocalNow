@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-05-01T10:20:18+0900",
       "summary": "PaymentScreen MATCHED 상태 capture 버튼 비활성화 + 안내 문구 추가, IN_PROGRESS 상태 활성화 확인, 테스트 2케이스 통과",
-      "completed_at": "2026-05-01T14:05:00+0900"
+      "completed_at": "2026-05-01T10:24:13+0900"
     }
   ],
   "created_at": "2026-05-01T10:17:47+0900",
