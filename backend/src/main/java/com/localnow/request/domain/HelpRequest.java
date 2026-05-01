@@ -72,7 +72,7 @@ public class HelpRequest {
     }
 
     public void toCompleted() {
-        if (status != HelpRequestStatus.IN_PROGRESS && status != HelpRequestStatus.MATCHED) {
+        if (status != HelpRequestStatus.IN_PROGRESS) {
             throw new IllegalStateException("Cannot transition to COMPLETED from " + status);
         }
         this.status = HelpRequestStatus.COMPLETED;

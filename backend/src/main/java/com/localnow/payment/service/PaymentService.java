@@ -122,6 +122,14 @@ public class PaymentService {
                     ErrorCode.PAYMENT_INVALID_STATE.getDefaultMessage());
         }
 
+        HelpRequest request = helpRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+
+        if (request.getStatus() != HelpRequestStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    ErrorCode.PAYMENT_INVALID_STATE.getDefaultMessage());
+        }
+
         PaymentGateway.CaptureResult result = paymentGateway.capture(intent.getAuthorizationId());
         if (!result.success()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -131,9 +139,6 @@ public class PaymentService {
         intent.capture(result.captureId());
         paymentIntentRepository.save(intent);
 
-        HelpRequest request = helpRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
-        // Allows both MATCHED→COMPLETED (direct) and IN_PROGRESS→COMPLETED (after /start called)
         request.toCompleted();
         helpRequestRepository.save(request);
 
