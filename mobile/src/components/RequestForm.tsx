@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,18 @@ import {
   Platform,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import * as Location from 'expo-location';
 import type { CreateRequestBody, RequestType } from '../types/api';
+import LocationMap from './LocationMap';
+
+interface NominatimResult {
+  lat: string;
+  lon: string;
+  display_name: string;
+}
 
 interface RequestFormProps {
   initialLat: number;
@@ -22,6 +31,7 @@ interface RequestFormProps {
 
 const REQUEST_TYPES: RequestType[] = ['GUIDE', 'TRANSLATION', 'FOOD', 'EMERGENCY'];
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 const TYPE_LABELS: Record<RequestType, string> = {
   GUIDE: '가이드',
@@ -41,20 +51,87 @@ function formatStartAt(d: Date): string {
   }).format(d);
 }
 
+async function fetchAddressSuggestions(query: string): Promise<NominatimResult[]> {
+  const params = new URLSearchParams({
+    q: query,
+    format: 'json',
+    limit: '5',
+    'accept-language': 'ko,en',
+  });
+  const res = await fetch(`${NOMINATIM_URL}?${params}`, {
+    headers: { 'User-Agent': 'LocalNow/1.0 (contact: localnow@example.com)' },
+  });
+  return res.json();
+}
+
 export default function RequestForm({
   initialLat,
   initialLng,
   onSubmit,
   isLoading,
 }: RequestFormProps) {
+  const [lat, setLat] = useState(initialLat);
+  const [lng, setLng] = useState(initialLng);
+  const [locationLoading, setLocationLoading] = useState(false);
+
   const [requestType, setRequestType] = useState<RequestType>('GUIDE');
   const [description, setDescription] = useState('');
-  /** 요청 시작 시각 (디바이스 로컬 → API는 ISO UTC) */
   const [startAt, setStartAt] = useState(() => minutesFromNow(30));
   const [durationMin, setDurationMin] = useState(60);
   const [budget, setBudget] = useState('');
-
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // GPS auto-detect on mount; keep fallback coords on failure or permission denial
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLocationLoading(true);
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (cancelled || status !== 'granted') return;
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          setLat(position.coords.latitude);
+          setLng(position.coords.longitude);
+        }
+      } catch {
+        // keep initialLat/initialLng fallback
+      } finally {
+        if (!cancelled) setLocationLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Debounced Nominatim address search (500ms); clear results immediately when query is emptied
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    const delay = trimmed ? 500 : 0;
+    const timer = setTimeout(async () => {
+      if (!trimmed) {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        setIsSearching(true);
+        const results = await fetchAddressSuggestions(trimmed);
+        setSearchResults(results.slice(0, 5));
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const budgetNum = parseInt(budget, 10);
   const isValid = description.trim().length > 0 && !Number.isNaN(budgetNum) && budgetNum > 0;
@@ -63,8 +140,8 @@ export default function RequestForm({
     if (!isValid || isLoading) return;
     onSubmit({
       requestType,
-      lat: initialLat,
-      lng: initialLng,
+      lat,
+      lng,
       description: description.trim(),
       startAt: startAt.toISOString(),
       durationMin,
@@ -81,116 +158,179 @@ export default function RequestForm({
     setStartAt(date);
   }
 
+  function handleSelectResult(result: NominatimResult) {
+    setLat(parseFloat(result.lat));
+    setLng(parseFloat(result.lon));
+    setSearchQuery(result.display_name);
+    setSearchResults([]);
+  }
+
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.label}>요청 유형</Text>
-      <View style={styles.row}>
-        {REQUEST_TYPES.map((type) => (
-          <TouchableOpacity
-            key={type}
-            testID={`type-${type}`}
-            style={[styles.chipButton, requestType === type && styles.chipButtonActive]}
-            onPress={() => setRequestType(type)}
-          >
-            <Text style={[styles.chipText, requestType === type && styles.chipTextActive]}>
-              {TYPE_LABELS[type]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.label}>설명</Text>
-      <TextInput
-        testID="description-input"
-        style={[styles.input, styles.inputMultiline]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="무엇이 필요하신가요?"
-        placeholderTextColor="#525252"
-        multiline
-        numberOfLines={3}
-      />
-
-      <Text style={styles.label}>시작 시각</Text>
-      <TouchableOpacity
-        testID="start-at-picker-trigger"
-        style={styles.datetimeRow}
-        onPress={() => setPickerOpen(true)}
-      >
-        <Text style={styles.datetimeValue}>{formatStartAt(startAt)}</Text>
-        <Text style={styles.datetimeHint}>탭해서 날짜·시간 선택</Text>
-      </TouchableOpacity>
-
-      {/* iOS: 바텀시트에서 스피너로 선택, 완료로 닫기 */}
-      <Modal transparent visible={pickerOpen && Platform.OS === 'ios'} animationType="slide">
-        <View style={styles.modalRoot}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setPickerOpen(false)} accessibilityRole="button" />
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setPickerOpen(false)}>
-                <Text style={styles.modalDone}>완료</Text>
-              </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Search bar + map (non-scrolling) */}
+      <View style={styles.searchAndMapSection}>
+        <View style={styles.searchWrapper}>
+          <TextInput
+            testID="address-search-input"
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="장소 검색 (예: 경복궁)"
+            placeholderTextColor="#525252"
+          />
+          {isSearching && (
+            <ActivityIndicator style={styles.searchSpinner} size="small" color="#f59e0b" />
+          )}
+          {searchResults.length > 0 && (
+            <View style={styles.dropdown}>
+              {searchResults.map((result, index) => (
+                <TouchableOpacity
+                  key={index}
+                  testID={`search-result-${index}`}
+                  style={[
+                    styles.dropdownItem,
+                    index < searchResults.length - 1 && styles.dropdownItemBorder,
+                  ]}
+                  onPress={() => handleSelectResult(result)}
+                >
+                  <Text style={styles.dropdownText} numberOfLines={1}>
+                    {result.display_name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <DateTimePicker
-              testID="start-at-picker-ios"
-              value={startAt}
-              mode="datetime"
-              display="spinner"
-              minimumDate={new Date()}
-              onChange={(e, date) => onPickDate(e, date)}
-              locale="ko-KR"
-            />
-          </View>
+          )}
         </View>
-      </Modal>
-
-      {/* Android: 시스템 다이얼로그 */}
-      {pickerOpen && Platform.OS === 'android' ? (
-        <DateTimePicker
-          testID="start-at-picker-android"
-          value={startAt}
-          mode="datetime"
-          display="default"
-          minimumDate={new Date()}
-          onChange={(e, date) => onPickDate(e, date)}
-          locale="ko-KR"
-        />
-      ) : null}
-
-      <Text style={styles.label}>소요 시간</Text>
-      <View style={styles.row}>
-        {DURATION_OPTIONS.map((d) => (
-          <TouchableOpacity
-            key={d}
-            testID={`duration-${d}`}
-            style={[styles.durationChip, durationMin === d && styles.chipButtonActive]}
-            onPress={() => setDurationMin(d)}
-          >
-            <Text style={[styles.chipText, durationMin === d && styles.chipTextActive]}>{d}분</Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.mapContainer}>
+          {locationLoading && (
+            <View style={styles.mapLoadingOverlay}>
+              <ActivityIndicator color="#f59e0b" size="small" />
+            </View>
+          )}
+          <LocationMap
+            lat={lat}
+            lng={lng}
+            onLocationChange={(newLat, newLng) => {
+              setLat(newLat);
+              setLng(newLng);
+            }}
+          />
+        </View>
       </View>
 
-      <Text style={styles.label}>제안 금액 (KRW)</Text>
-      <TextInput
-        testID="budget-input"
-        style={styles.input}
-        value={budget}
-        onChangeText={setBudget}
-        placeholder="30000"
-        placeholderTextColor="#525252"
-        keyboardType="numeric"
-      />
+      {/* Form fields (scrolling) */}
+      <ScrollView style={styles.formScroll} keyboardShouldPersistTaps="handled">
+        <Text style={styles.label}>요청 유형</Text>
+        <View style={styles.row}>
+          {REQUEST_TYPES.map((type) => (
+            <TouchableOpacity
+              key={type}
+              testID={`type-${type}`}
+              style={[styles.chipButton, requestType === type && styles.chipButtonActive]}
+              onPress={() => setRequestType(type)}
+            >
+              <Text style={[styles.chipText, requestType === type && styles.chipTextActive]}>
+                {TYPE_LABELS[type]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <TouchableOpacity
-        testID="submit-button"
-        style={[styles.submitButton, (!isValid || isLoading) && styles.submitButtonDisabled]}
-        onPress={handleSubmit}
-        disabled={!isValid || isLoading}
-      >
-        <Text style={styles.submitText}>{isLoading ? '요청 중...' : '요청하기'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <Text style={styles.label}>설명</Text>
+        <TextInput
+          testID="description-input"
+          style={[styles.input, styles.inputMultiline]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="무엇이 필요하신가요?"
+          placeholderTextColor="#525252"
+          multiline
+          numberOfLines={3}
+        />
+
+        <Text style={styles.label}>시작 시각</Text>
+        <TouchableOpacity
+          testID="start-at-picker-trigger"
+          style={styles.datetimeRow}
+          onPress={() => setPickerOpen(true)}
+        >
+          <Text style={styles.datetimeValue}>{formatStartAt(startAt)}</Text>
+          <Text style={styles.datetimeHint}>탭해서 날짜·시간 선택</Text>
+        </TouchableOpacity>
+
+        {/* iOS: 바텀시트에서 스피너로 선택, 완료로 닫기 */}
+        <Modal transparent visible={pickerOpen && Platform.OS === 'ios'} animationType="slide">
+          <View style={styles.modalRoot}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setPickerOpen(false)} accessibilityRole="button" />
+            <View style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setPickerOpen(false)}>
+                  <Text style={styles.modalDone}>완료</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                testID="start-at-picker-ios"
+                value={startAt}
+                mode="datetime"
+                display="spinner"
+                minimumDate={new Date()}
+                onChange={(e, date) => onPickDate(e, date)}
+                locale="ko-KR"
+              />
+            </View>
+          </View>
+        </Modal>
+
+        {/* Android: 시스템 다이얼로그 */}
+        {pickerOpen && Platform.OS === 'android' ? (
+          <DateTimePicker
+            testID="start-at-picker-android"
+            value={startAt}
+            mode="datetime"
+            display="default"
+            minimumDate={new Date()}
+            onChange={(e, date) => onPickDate(e, date)}
+            locale="ko-KR"
+          />
+        ) : null}
+
+        <Text style={styles.label}>소요 시간</Text>
+        <View style={styles.row}>
+          {DURATION_OPTIONS.map((d) => (
+            <TouchableOpacity
+              key={d}
+              testID={`duration-${d}`}
+              style={[styles.durationChip, durationMin === d && styles.chipButtonActive]}
+              onPress={() => setDurationMin(d)}
+            >
+              <Text style={[styles.chipText, durationMin === d && styles.chipTextActive]}>
+                {d}분
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>제안 금액 (KRW)</Text>
+        <TextInput
+          testID="budget-input"
+          style={styles.input}
+          value={budget}
+          onChangeText={setBudget}
+          placeholder="30000"
+          placeholderTextColor="#525252"
+          keyboardType="numeric"
+        />
+
+        <TouchableOpacity
+          testID="submit-button"
+          style={[styles.submitButton, (!isValid || isLoading) && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={!isValid || isLoading}
+        >
+          <Text style={styles.submitText}>{isLoading ? '요청 중...' : '요청하기'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -198,7 +338,79 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    padding: 16,
+  },
+  searchAndMapSection: {
+    zIndex: 10,
+  },
+  searchWrapper: {
+    position: 'relative',
+    zIndex: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+  searchInput: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#fff',
+    fontSize: 14,
+  },
+  searchSpinner: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 44,
+    left: 0,
+    right: 0,
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 6,
+    zIndex: 20,
+    elevation: 8,
+  },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dropdownItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#262626',
+  },
+  dropdownText: {
+    color: '#d4d4d4',
+    fontSize: 13,
+  },
+  mapContainer: {
+    height: 200,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  mapLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(10,10,10,0.6)',
+    zIndex: 1,
+  },
+  formScroll: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   label: {
     color: '#a3a3a3',
