@@ -23,6 +23,7 @@ import com.localnow.config.security.JwtProvider;
 import com.localnow.config.security.TestSecurityConfig;
 import com.localnow.infra.redis.RedisGeoService;
 import com.localnow.user.service.CertificationService;
+import com.localnow.user.service.GuideProfileService;
 
 @WebMvcTest(GuideController.class)
 @Import(TestSecurityConfig.class)
@@ -39,6 +40,9 @@ class GuideControllerTest {
 
     @MockBean
     private CertificationService certificationService;
+
+    @MockBean
+    private GuideProfileService guideProfileService;
 
     @MockBean
     private JwtProvider jwtProvider;

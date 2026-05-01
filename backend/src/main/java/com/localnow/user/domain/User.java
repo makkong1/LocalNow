@@ -44,6 +44,12 @@ public class User {
     @Column(name = "bio", columnDefinition = "TEXT")
     private String bio;
 
+    @Column(name = "base_lat")
+    private Double baseLat;
+
+    @Column(name = "base_lng")
+    private Double baseLng;
+
     @Column(name = "avg_rating", precision = 3, scale = 2)
     private BigDecimal avgRating = BigDecimal.ZERO;
 
@@ -98,6 +104,17 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    public Double getBaseLat() { return baseLat; }
+    public void setBaseLat(Double baseLat) { this.baseLat = baseLat; }
+
+    public Double getBaseLng() { return baseLng; }
+    public void setBaseLng(Double baseLng) { this.baseLng = baseLng; }
+
+    public void updateBaseLocation(double lat, double lng) {
+        this.baseLat = lat;
+        this.baseLng = lng;
+    }
 
     public void updateProfile(String profileImageUrl, Short birthYear, String bio) {
         this.profileImageUrl = profileImageUrl;
