@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "mobile-map-migration",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-01T16:09:37+0900",
+      "summary": "react-native-maps → @rnmapbox/maps@10.3.0 교체, dark-v11 스타일 + UserLocation + PointAnnotation, .env.local.example 토큰 플레이스홀더 추가, Jest moduleNameMapper 등록",
+      "completed_at": "2026-05-01T17:00:00+0900"
     },
     {
       "step": 3,
