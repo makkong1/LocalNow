@@ -13,7 +13,9 @@
     {
       "step": 1,
       "name": "backend-spatial-service",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-01T16:04:35+0900",
+      "summary": "RequestService.findNearbyOpenRequests 추가(GeoUtils.boundingBox MBR + km→m 변환), MatchDispatcher 반경 @Value 외부화(localnow.match.search-radius-km), application.yml 설정 추가, RequestServiceTest 단위 테스트 4개 추가"
     },
     {
       "step": 2,
