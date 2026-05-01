@@ -8,12 +8,15 @@
       "status": "completed",
       "started_at": "2026-05-01T10:17:47+0900",
       "summary": "HelpRequest.toCompleted() IN_PROGRESS 전용으로 변경, PaymentService.capture() 명시적 IN_PROGRESS 가드 추가(PG 호출 전), 테스트 2케이스(capture 성공/MATCHED 차단) 통과",
-      "completed_at": "2026-05-01T13:30:00+0900"
+      "completed_at": "2026-05-01T10:23:39+0900"
     },
     {
       "step": 1,
       "name": "mobile-capture-guard",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-01T10:20:18+0900",
+      "summary": "PaymentScreen MATCHED 상태 capture 버튼 비활성화 + 안내 문구 추가, IN_PROGRESS 상태 활성화 확인, 테스트 2케이스 통과",
+      "completed_at": "2026-05-01T14:05:00+0900"
     }
   ],
   "created_at": "2026-05-01T10:17:47+0900"
