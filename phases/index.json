@@ -33,6 +33,15 @@
     },
     {
       "dir": "8-map-spatial-upgrade",
+      "status": "completed",
+      "completed_at": "2026-05-01T16:30:00+0900"
+    },
+    {
+      "dir": "9-request-enhancements",
+      "status": "pending"
+    },
+    {
+      "dir": "10-i18n",
       "status": "pending"
     }
   ]

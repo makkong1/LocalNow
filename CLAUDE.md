@@ -37,7 +37,7 @@ localNow/
 - NativeWind v4 (Tailwind CSS 문법으로 RN 스타일링)
 - TanStack Query v5 (서버 상태)
 - `@stomp/stompjs` 로 백엔드 WebSocket 직접 연결 (Native WebSocket, SockJS 불필요)
-- `react-native-maps` + OpenStreetMap 타일 (지도. API 키 불필요)
+- `@maplibre/maplibre-react-native` v11+ + CARTO Dark Matter 벡터 스타일 (지도. 계정·API 키 불필요)
 - `expo-location` (기기 GPS 접근)
 - `expo-secure-store` (JWT 저장. AsyncStorage 금지)
 - React Navigation v6 (Stack + Bottom Tab)

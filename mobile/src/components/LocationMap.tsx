@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+import MapLibreGL from '@maplibre/maplibre-react-native';
 
-MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 interface LocationMapProps {
   lat: number;
@@ -20,27 +20,27 @@ export default function LocationMap({ lat, lng, onLocationChange, markers }: Loc
   }
 
   return (
-    <MapboxGL.MapView
+    <MapLibreGL.MapView
       style={styles.map}
-      styleURL="mapbox://styles/mapbox/dark-v11"
+      styleURL={DARK_STYLE}
       onPress={onLocationChange ? handleMapPress : undefined}
     >
-      <MapboxGL.Camera
+      <MapLibreGL.Camera
         centerCoordinate={[lng, lat]}
         zoomLevel={14}
         animationDuration={300}
       />
-      <MapboxGL.UserLocation visible={true} />
-      <MapboxGL.PointAnnotation id="selected-location" coordinate={[lng, lat]}>
+      <MapLibreGL.UserLocation visible={true} />
+      <MapLibreGL.PointAnnotation id="selected-location" coordinate={[lng, lat]}>
         <View style={styles.amberMarker} />
-      </MapboxGL.PointAnnotation>
+      </MapLibreGL.PointAnnotation>
       {markers?.map((m) => (
-        <MapboxGL.PointAnnotation key={m.id} id={m.id} coordinate={[m.lng, m.lat]}>
+        <MapLibreGL.PointAnnotation key={m.id} id={m.id} coordinate={[m.lng, m.lat]}>
           <View style={styles.whiteMarker} />
-          <MapboxGL.Callout title={m.title} />
-        </MapboxGL.PointAnnotation>
+          <MapLibreGL.Callout title={m.title} />
+        </MapLibreGL.PointAnnotation>
       ))}
-    </MapboxGL.MapView>
+    </MapLibreGL.MapView>
   );
 }
 

@@ -1,0 +1,11 @@
+{
+  "project": "LocalNow",
+  "phase": "9-request-enhancements",
+  "steps": [
+    { "step": 0, "name": "backend-filter-sort", "status": "pending" },
+    { "step": 1, "name": "backend-guide-baseloc", "status": "pending" },
+    { "step": 2, "name": "mobile-filter-sort", "status": "pending" },
+    { "step": 3, "name": "mobile-traveler-location", "status": "pending" },
+    { "step": 4, "name": "mobile-guide-baseloc", "status": "pending" }
+  ]
+}

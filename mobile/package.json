@@ -12,11 +12,11 @@
     "test": "jest --watchAll=false --passWithNoTests"
   },
   "dependencies": {
+    "@maplibre/maplibre-react-native": "^11.0.2",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-navigation/bottom-tabs": "^7.15.10",
     "@react-navigation/native": "^7.2.2",
     "@react-navigation/stack": "^7.8.11",
-    "@rnmapbox/maps": "^10.3.0",
     "@stomp/stompjs": "^7.3.0",
     "@tanstack/react-query": "^5.100.1",
     "babel-preset-expo": "~54.0.10",

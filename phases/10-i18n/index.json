@@ -1,0 +1,9 @@
+{
+  "project": "LocalNow",
+  "phase": "10-i18n",
+  "steps": [
+    { "step": 0, "name": "i18n-setup", "status": "pending" },
+    { "step": 1, "name": "i18n-screens", "status": "pending" },
+    { "step": 2, "name": "i18n-selector", "status": "pending" }
+  ]
+}
