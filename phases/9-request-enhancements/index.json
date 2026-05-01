@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "mobile-guide-baseloc",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-02T01:39:35+0900",
+      "summary": "ProfileEditScreen 활동 거점 설정 UI(BaseLocationModal + Nominatim 검색), useGuideBaseLocation/useSaveGuideBaseLocation 훅 추가. GuideScreen 거점→GPS→없음 우선순위로 주변 요청 검색 연결",
+      "completed_at": "2026-05-02T02:10:00+0900"
     }
   ],
   "created_at": "2026-05-01T22:05:14+0900"
