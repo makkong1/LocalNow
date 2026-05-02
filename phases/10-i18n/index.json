@@ -7,7 +7,8 @@
       "name": "i18n-setup",
       "status": "completed",
       "started_at": "2026-05-02T13:20:58+0900",
-      "summary": "i18next + react-i18next + expo-localization 설치, ko/en/zh/ja 번역 파일 생성(mobile/src/i18n/), initI18n 비동기 초기화 구현, SecureStore 언어 저장, App.tsx에 로딩 인디케이터 추가"
+      "summary": "i18next + react-i18next + expo-localization 설치, ko/en/zh/ja 번역 파일 생성(mobile/src/i18n/), initI18n 비동기 초기화 구현, SecureStore 언어 저장, App.tsx에 로딩 인디케이터 추가",
+      "completed_at": "2026-05-02T13:27:47+0900"
     },
     {
       "step": 1,
