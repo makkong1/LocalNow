@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { AppStackParamList } from '../navigation/AppNavigator';
 import { usePaymentIntent, useCreatePaymentIntent, useCapturePayment } from '../hooks/usePayment';
@@ -15,6 +16,7 @@ import { useMyRequests } from '../hooks/useRequests';
 type PaymentScreenProps = StackScreenProps<AppStackParamList, 'Payment'>;
 
 export default function PaymentScreen({ route, navigation }: PaymentScreenProps) {
+  const { t } = useTranslation();
   const { requestId, guideId } = route.params;
   const { data: intent, isLoading } = usePaymentIntent(requestId);
   const { data: requestsPage } = useMyRequests();
@@ -47,14 +49,14 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
   }
 
   function getButtonLabel(): string {
-    if (capturePayment.isPending) return '처리 중...';
-    if (isCaptured) return '결제 완료 ✓';
-    if (isRefunded) return '환불됨';
-    if (isFailed) return '결제 실패 — 다시 시도';
+    if (capturePayment.isPending) return t('common.processing');
+    if (isCaptured) return t('payment.paid');
+    if (isRefunded) return t('payment.refunded');
+    if (isFailed) return t('payment.failed');
     if (currentIntent?.status === 'AUTHORIZED') {
-      return isServiceStarted ? '서비스 완료 확인 및 결제' : '가이드 서비스 시작 대기 중';
+      return isServiceStarted ? t('payment.pay') : t('payment.waitingStart');
     }
-    return '결제 완료 (Mock)';
+    return t('payment.mockPaid');
   }
 
   const isButtonDisabled = isCaptured || isRefunded || capturePayment.isPending || !isServiceStarted;
@@ -70,28 +72,28 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
   if (!currentIntent) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>결제 정보를 불러올 수 없습니다.</Text>
+        <Text style={styles.errorText}>{t('payment.loadError')}</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>결제</Text>
+      <Text style={styles.pageTitle}>{t('payment.title')}</Text>
 
       {isEmergency && (
         <View style={styles.emergencyBanner}>
-          <Text style={styles.emergencyText}>EMERGENCY 요청 — 플랫폼 수수료 25%</Text>
+          <Text style={styles.emergencyText}>{t('payment.emergencyFeeNotice')}</Text>
         </View>
       )}
 
       <View style={styles.card}>
-        <Text style={styles.sectionLabel}>금액 내역</Text>
+        <Text style={styles.sectionLabel}>{t('payment.breakdown')}</Text>
 
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>총 금액</Text>
+          <Text style={styles.rowLabel}>{t('payment.total')}</Text>
           <Text testID="amount-krw" style={styles.rowValue}>
-            {currentIntent.amountKrw.toLocaleString()}원
+            {currentIntent.amountKrw.toLocaleString()}{t('common.won')}
           </Text>
         </View>
 
@@ -99,17 +101,17 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
 
         <View style={styles.row}>
           <Text style={styles.rowLabel}>
-            플랫폼 수수료 {isEmergency ? '(25%)' : '(15%)'}
+            {isEmergency ? t('payment.feeRate25') : t('payment.feeRate15')}
           </Text>
           <Text testID="platform-fee-krw" style={styles.rowValueMuted}>
-            -{currentIntent.platformFeeKrw.toLocaleString()}원
+            -{currentIntent.platformFeeKrw.toLocaleString()}{t('common.won')}
           </Text>
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>가이드 수령액</Text>
+          <Text style={styles.rowLabel}>{t('payment.guideAmount')}</Text>
           <Text testID="guide-payout" style={styles.rowValueAccent}>
-            {currentIntent.guidePayout.toLocaleString()}원
+            {currentIntent.guidePayout.toLocaleString()}{t('common.won')}
           </Text>
         </View>
       </View>
@@ -124,15 +126,15 @@ export default function PaymentScreen({ route, navigation }: PaymentScreenProps)
       </TouchableOpacity>
 
       {!isServiceStarted && !isCaptured && !isRefunded && (
-        <Text style={styles.pendingNote}>가이드가 서비스를 시작하면 결제할 수 있습니다.</Text>
+        <Text style={styles.pendingNote}>{t('payment.waitingGuide')}</Text>
       )}
 
       {isCaptured && (
-        <Text style={styles.capturedNote}>이미 결제가 완료되었습니다.</Text>
+        <Text style={styles.capturedNote}>{t('payment.alreadyPaid')}</Text>
       )}
 
       {capturePayment.isError && (
-        <Text style={styles.errorText}>결제 처리에 실패했습니다. 다시 시도해주세요.</Text>
+        <Text style={styles.errorText}>{t('payment.payFailed')}</Text>
       )}
     </ScrollView>
   );

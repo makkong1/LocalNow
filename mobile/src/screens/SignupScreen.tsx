@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { openBackendOAuth2 } from '../lib/oauth-redirect';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -21,6 +22,7 @@ type SignupNavProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
 export default function SignupScreen() {
   const navigation = useNavigation<SignupNavProp>();
+  const { t } = useTranslation();
   const { signup } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,7 +50,7 @@ export default function SignupScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>회원가입</Text>
+        <Text style={styles.title}>{t('auth.signup')}</Text>
         <View style={styles.oauthRow}>
           <TouchableOpacity
             style={styles.oauthBtn}
@@ -65,12 +67,10 @@ export default function SignupScreen() {
             <Text style={styles.oauthBtnText}>GitHub</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.oauthHint}>
-          소셜은 브라우저로 열리며, 완료 URL은 백엔드 success-redirect(기본 Next 콜백)를 따릅니다.
-        </Text>
+        <Text style={styles.oauthHint}>{t('auth.oauthSignupHint')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="이메일"
+          placeholder={t('auth.email')}
           placeholderTextColor="#525252"
           value={email}
           onChangeText={setEmail}
@@ -80,7 +80,7 @@ export default function SignupScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="비밀번호 (4자 이상)"
+          placeholder={t('auth.passwordHint')}
           placeholderTextColor="#525252"
           value={password}
           onChangeText={setPassword}
@@ -89,7 +89,7 @@ export default function SignupScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="이름"
+          placeholder={t('auth.name')}
           placeholderTextColor="#525252"
           value={name}
           onChangeText={setName}
@@ -97,7 +97,7 @@ export default function SignupScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="도시 (선택)"
+          placeholder={t('auth.city')}
           placeholderTextColor="#525252"
           value={city}
           onChangeText={setCity}
@@ -110,7 +110,7 @@ export default function SignupScreen() {
             testID="role-traveler"
           >
             <Text style={[styles.roleBtnText, role === 'TRAVELER' && styles.roleBtnTextActive]}>
-              여행자
+              {t('auth.roleTraveler')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -119,7 +119,7 @@ export default function SignupScreen() {
             testID="role-guide"
           >
             <Text style={[styles.roleBtnText, role === 'GUIDE' && styles.roleBtnTextActive]}>
-              가이드
+              {t('auth.roleGuide')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -133,11 +133,11 @@ export default function SignupScreen() {
           {loading ? (
             <ActivityIndicator color="#0a0a0a" />
           ) : (
-            <Text style={styles.buttonText}>가입하기</Text>
+            <Text style={styles.buttonText}>{t('auth.signupAction')}</Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Login')} testID="login-link">
-          <Text style={styles.link}>이미 계정이 있으신가요? 로그인</Text>
+          <Text style={styles.link}>{t('auth.alreadyHaveAccount')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -9,7 +9,11 @@
     "close": "閉じる",
     "retry": "再試行",
     "won": "ウォン",
-    "min": "分"
+    "min": "分",
+    "back": "← 戻る",
+    "errorTitle": "エラー",
+    "delete": "削除",
+    "search": "検索"
   },
   "auth": {
     "login": "ログイン",
@@ -27,7 +31,26 @@
     "oauthHint": "ソーシャルログインはブラウザで開きます。リダイレクトURLは成功リダイレクト設定に従います。",
     "oauthSignupHint": "ソーシャルログインはブラウザで開きます。リダイレクトURLはバックエンドの成功リダイレクト設定に従います。",
     "roleTraveler": "旅行者",
-    "roleGuide": "ガイド"
+    "roleGuide": "ガイド",
+    "forgotPasswordDesc": "メールアドレスを入力して認証コードを受け取り、新しいパスワードを設定します。ソーシャル専用アカウントはパスワードリセットできません。",
+    "otpLabel": "6桁の認証コード",
+    "newPasswordLabel": "新しいパスワード（4文字以上）",
+    "newPasswordPlaceholder": "新しいパスワード",
+    "otpSentTitle": "コードを送信しました",
+    "otpSentMsg": "そのメールアドレスに認証コードを送信しました。\n（開発環境ではサーバーコンソールログでOTPを確認できます。）",
+    "requestFailed": "リクエストに失敗しました。",
+    "passwordResetFailed": "パスワードの変更に失敗しました。",
+    "passwordResetDoneTitle": "完了",
+    "passwordResetDoneMsg": "パスワードが変更されました。新しいパスワードでログインしてください。",
+    "requestOtp": "コードを送信",
+    "changePassword": "パスワードを変更",
+    "backToLogin": "ログインに戻る",
+    "emailHintDesc": "IDは登録時に使用したメールアドレスです。登録時に入力した名前と都市が一致すれば、登録メールに認証コードが送信されます。",
+    "cityAtSignup": "都市（登録時に入力）",
+    "otpSentMsgEmail": "登録メールアドレスに認証コードを送信しました。\n（開発環境ではサーバーコンソールログでOTPを確認できます。）",
+    "verifyFailed": "認証に失敗しました。",
+    "showEmailButton": "確認後にメールを表示",
+    "emailFoundTitle": "登録メールアドレス"
   },
   "guide": {
     "nearbyRequests": "近くのリクエスト",
@@ -38,6 +61,7 @@
     "offDutyHint": "オンにすると位置を登録してリクエストを受信します",
     "accept": "承諾",
     "acceptDone": "承諾済み",
+    "accepted": "承諾済み",
     "acceptConfirmTitle": "リクエスト承諾",
     "acceptConfirmMsg": "旅行者が確定したら通知が届きます。",
     "startService": "サービス開始",
@@ -57,7 +81,8 @@
     "locationPermTitle": "位置情報の許可が必要",
     "locationPermMsg": "勤務開始には位置情報の許可が必要です",
     "locationErrorTitle": "位置情報エラー",
-    "locationErrorMsg": "現在地を取得できませんでした。シミュレーターは機能 › 位置から座標を設定してください。"
+    "locationErrorMsg": "現在地を取得できませんでした。シミュレーターは機能 › 位置から座標を設定してください。",
+    "budgetMeta": "{{budget}}{{won}} · {{duration}}{{min}}"
   },
   "traveler": {
     "createRequest": "ヘルプをリクエスト",
@@ -70,6 +95,7 @@
     "startAtDone": "完了",
     "duration": "所要時間",
     "budget": "予算（ウォン）",
+    "budgetLabel": "予算",
     "locationSearch": "場所を検索（例：景福宮）",
     "descriptionPlaceholder": "何が必要ですか？",
     "submitting": "リクエスト中...",
@@ -89,7 +115,8 @@
     "cancelled": "このリクエストはキャンセルされました。",
     "newRequest": "新しいリクエスト",
     "locationPermTitle": "位置情報の許可",
-    "locationPermMsg": "現在地を取得できません。地図をタップしてリクエスト位置を選択できます。"
+    "locationPermMsg": "現在地を取得できません。地図をタップしてリクエスト位置を選択できます。",
+    "viewGuideProfile": "ガイドプロフィールを見る →"
   },
   "payment": {
     "title": "支払い",
@@ -109,7 +136,9 @@
     "loadError": "支払い情報を読み込めませんでした。",
     "waitingGuide": "ガイドがサービスを開始すると支払いできます。",
     "alreadyPaid": "支払いはすでに完了しています。",
-    "payFailed": "支払いに失敗しました。もう一度お試しください。"
+    "payFailed": "支払いに失敗しました。もう一度お試しください。",
+    "cta": "支払う",
+    "authorized": "支払い待ち"
   },
   "chat": {
     "placeholder": "メッセージを入力...",
@@ -119,7 +148,13 @@
     "disconnected": "切断",
     "roomTitle": "チャットルーム #{{roomId}}",
     "waitingTitle": "接続待機中",
-    "waitingMsg": "WebSocket（STOMP）がまだ接続されていません。\n\n• バックエンド（bootRun）とdocker（MySQLなど）が起動しているか確認\n• Metroターミナルで[LocalNow STOMP]ログを確認"
+    "waitingMsg": "WebSocket（STOMP）がまだ接続されていません。\n\n• バックエンド（bootRun）とdocker（MySQLなど）が起動しているか確認\n• Metroターミナルで[LocalNow STOMP]ログを確認",
+    "listError": "チャットリストの読み込みに失敗しました",
+    "noChats": "確定したマッチングはありません",
+    "justNow": "たった今",
+    "minutesAgo": "{{n}}分前",
+    "hoursAgo": "{{n}}時間前",
+    "daysAgo": "{{n}}日前"
   },
   "review": {
     "title": "レビューを書く",
@@ -167,5 +202,42 @@
     "min120": "120分",
     "min180": "180分",
     "min240": "240分"
+  },
+  "profileEdit": {
+    "title": "プロフィール編集",
+    "profileImage": "プロフィール画像",
+    "imageHint": "タップして画像を変更",
+    "basicInfo": "基本情報",
+    "birthYear": "生年",
+    "bio": "自己紹介",
+    "notSet": "未設定",
+    "baseLocation": "活動拠点",
+    "setLocation": "拠点を設定",
+    "certifications": "資格",
+    "certName": "資格名",
+    "addPdf": "PDFを追加",
+    "delete": "削除",
+    "certEmptyHint": "資格を登録すると旅行者からの信頼が高まります",
+    "permRequired": "権限が必要",
+    "galleryPermission": "ギャラリーへのアクセス権限が必要です。",
+    "certNameRequired": "資格名を入力してください。",
+    "loadFailed": "プロフィールの読み込みに失敗しました",
+    "saveFailedTitle": "拠点の保存に失敗",
+    "deleteCertTitle": "資格を削除",
+    "deleteCertMsg": "本当に削除しますか？",
+    "setLocationTitle": "活動拠点を設定",
+    "searchAddress": "住所を検索"
+  },
+  "guideProfile": {
+    "loadError": "プロフィールを読み込めませんでした",
+    "backShort": "← 戻る",
+    "bio": "自己紹介",
+    "languages": "言語スキル",
+    "certifications": "資格",
+    "recentReviews": "最近のレビュー",
+    "noCerts": "登録された資格なし",
+    "noReviews": "まだレビューがありません",
+    "age": "{{n}}歳",
+    "completedCount": "{{n}}回完了"
   }
 }

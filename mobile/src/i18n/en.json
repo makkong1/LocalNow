@@ -9,7 +9,11 @@
     "close": "Close",
     "retry": "Retry",
     "won": "KRW",
-    "min": "min"
+    "min": "min",
+    "back": "← Back",
+    "errorTitle": "Error",
+    "delete": "Delete",
+    "search": "Search"
   },
   "auth": {
     "login": "Login",
@@ -27,7 +31,26 @@
     "oauthHint": "Social login opens in browser. The redirect URL follows success-redirect settings.",
     "oauthSignupHint": "Social login opens in browser. The redirect URL follows the backend success-redirect (Next callback by default).",
     "roleTraveler": "Traveler",
-    "roleGuide": "Guide"
+    "roleGuide": "Guide",
+    "forgotPasswordDesc": "Enter your email to receive a verification code, then set a new password. Social-only accounts cannot reset passwords.",
+    "otpLabel": "6-digit verification code",
+    "newPasswordLabel": "New Password (min 4 chars)",
+    "newPasswordPlaceholder": "New Password",
+    "otpSentTitle": "Code Sent",
+    "otpSentMsg": "A verification code has been sent to that email.\n(In development, check the server console log for the OTP.)",
+    "requestFailed": "Request failed.",
+    "passwordResetFailed": "Failed to change password.",
+    "passwordResetDoneTitle": "Done",
+    "passwordResetDoneMsg": "Password changed. Please log in with your new password.",
+    "requestOtp": "Send Code",
+    "changePassword": "Change Password",
+    "backToLogin": "Back to Login",
+    "emailHintDesc": "Your ID is the email you used to sign up. If the name and city you entered match, a verification code will be sent to the registered email.",
+    "cityAtSignup": "City (entered at signup)",
+    "otpSentMsgEmail": "A verification code has been sent to the registered email.\n(In development, check the server console log for the OTP.)",
+    "verifyFailed": "Verification failed.",
+    "showEmailButton": "Show Email After Verification",
+    "emailFoundTitle": "Registered Email"
   },
   "guide": {
     "nearbyRequests": "Nearby Requests",
@@ -38,6 +61,7 @@
     "offDutyHint": "Turn on to register location and receive requests",
     "accept": "Accept",
     "acceptDone": "Accepted",
+    "accepted": "Accepted",
     "acceptConfirmTitle": "Request Accepted",
     "acceptConfirmMsg": "You'll be notified when the traveler confirms.",
     "startService": "Start Service",
@@ -57,7 +81,8 @@
     "locationPermTitle": "Location Permission Required",
     "locationPermMsg": "Location permission is required to start duty",
     "locationErrorTitle": "Location Error",
-    "locationErrorMsg": "Could not get current location. For simulators, try setting coordinates in Features › Location."
+    "locationErrorMsg": "Could not get current location. For simulators, try setting coordinates in Features › Location.",
+    "budgetMeta": "{{budget}}{{won}} · {{duration}}{{min}}"
   },
   "traveler": {
     "createRequest": "Request Help",
@@ -70,6 +95,7 @@
     "startAtDone": "Done",
     "duration": "Duration",
     "budget": "Budget (KRW)",
+    "budgetLabel": "Budget",
     "locationSearch": "Search location (e.g. Gyeongbokgung)",
     "descriptionPlaceholder": "What do you need?",
     "submitting": "Requesting...",
@@ -89,7 +115,8 @@
     "cancelled": "This request has been cancelled.",
     "newRequest": "New Request",
     "locationPermTitle": "Location Permission",
-    "locationPermMsg": "Current location unavailable. You can tap on the map to select a request location."
+    "locationPermMsg": "Current location unavailable. You can tap on the map to select a request location.",
+    "viewGuideProfile": "View Guide Profile →"
   },
   "payment": {
     "title": "Payment",
@@ -109,7 +136,9 @@
     "loadError": "Could not load payment info.",
     "waitingGuide": "You can pay once the guide starts the service.",
     "alreadyPaid": "Payment has already been completed.",
-    "payFailed": "Payment failed. Please try again."
+    "payFailed": "Payment failed. Please try again.",
+    "cta": "Pay",
+    "authorized": "Payment Pending"
   },
   "chat": {
     "placeholder": "Type a message...",
@@ -119,7 +148,13 @@
     "disconnected": "disconnected",
     "roomTitle": "Chat Room #{{roomId}}",
     "waitingTitle": "Waiting for connection",
-    "waitingMsg": "WebSocket (STOMP) is not connected yet.\n\n• Check that the backend (bootRun) and docker (MySQL etc.) are running\n• Check [LocalNow STOMP] logs in the Metro terminal"
+    "waitingMsg": "WebSocket (STOMP) is not connected yet.\n\n• Check that the backend (bootRun) and docker (MySQL etc.) are running\n• Check [LocalNow STOMP] logs in the Metro terminal",
+    "listError": "Failed to load chat list",
+    "noChats": "No confirmed matches",
+    "justNow": "Just now",
+    "minutesAgo": "{{n}}m ago",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago"
   },
   "review": {
     "title": "Write Review",
@@ -167,5 +202,42 @@
     "min120": "120 min",
     "min180": "180 min",
     "min240": "240 min"
+  },
+  "profileEdit": {
+    "title": "Edit Profile",
+    "profileImage": "Profile Image",
+    "imageHint": "Tap to change image",
+    "basicInfo": "Basic Info",
+    "birthYear": "Birth Year",
+    "bio": "Bio",
+    "notSet": "Not set",
+    "baseLocation": "Base Location",
+    "setLocation": "Set Location",
+    "certifications": "Certifications",
+    "certName": "Certification name",
+    "addPdf": "Add PDF",
+    "delete": "Delete",
+    "certEmptyHint": "Adding certifications increases traveler trust",
+    "permRequired": "Permission Required",
+    "galleryPermission": "Gallery access permission is required.",
+    "certNameRequired": "Please enter a certification name.",
+    "loadFailed": "Failed to load profile",
+    "saveFailedTitle": "Failed to Save Location",
+    "deleteCertTitle": "Delete Certification",
+    "deleteCertMsg": "Are you sure you want to delete?",
+    "setLocationTitle": "Set Base Location",
+    "searchAddress": "Search address"
+  },
+  "guideProfile": {
+    "loadError": "Could not load profile",
+    "backShort": "← Back",
+    "bio": "Bio",
+    "languages": "Languages",
+    "certifications": "Certifications",
+    "recentReviews": "Recent Reviews",
+    "noCerts": "No certifications registered",
+    "noReviews": "No reviews yet",
+    "age": "Age {{n}}",
+    "completedCount": "{{n}} completed"
   }
 }

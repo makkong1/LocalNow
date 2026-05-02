@@ -9,7 +9,11 @@
     "close": "닫기",
     "retry": "다시 시도",
     "won": "원",
-    "min": "분"
+    "min": "분",
+    "back": "← 뒤로",
+    "errorTitle": "오류",
+    "delete": "삭제",
+    "search": "검색"
   },
   "auth": {
     "login": "로그인",
@@ -27,7 +31,26 @@
     "oauthHint": "소셜 로그인은 브라우저로 열리며, 완료 URL은 success-redirect 설정을 따릅니다.",
     "oauthSignupHint": "소셜은 브라우저로 열리며, 완료 URL은 백엔드 success-redirect(기본 Next 콜백)를 따릅니다.",
     "roleTraveler": "여행자",
-    "roleGuide": "가이드"
+    "roleGuide": "가이드",
+    "forgotPasswordDesc": "가입 시 이메일로 인증번호를 보낸 뒤, 새 비밀번호를 설정합니다. 소셜 전용 계정은 비밀번호 재설정을 할 수 없습니다.",
+    "otpLabel": "인증번호 6자리",
+    "newPasswordLabel": "새 비밀번호 (4자 이상)",
+    "newPasswordPlaceholder": "새 비밀번호",
+    "otpSentTitle": "인증번호 발송",
+    "otpSentMsg": "해당 이메일로 인증번호가 발송되었습니다.\n(개발 환경에서는 서버 콘솔 로그에서 OTP를 확인할 수 있습니다.)",
+    "requestFailed": "요청에 실패했습니다.",
+    "passwordResetFailed": "비밀번호 변경에 실패했습니다.",
+    "passwordResetDoneTitle": "완료",
+    "passwordResetDoneMsg": "비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.",
+    "requestOtp": "인증번호 받기",
+    "changePassword": "비밀번호 변경",
+    "backToLogin": "로그인으로",
+    "emailHintDesc": "아이디는 가입 시 사용한 이메일입니다. 가입 시 입력한 이름과 도시가 일치하면 등록 이메일로 인증번호가 발송됩니다.",
+    "cityAtSignup": "도시 (가입 시 입력)",
+    "otpSentMsgEmail": "등록된 이메일로 인증번호가 발송되었습니다.\n(개발 환경에서는 서버 콘솔 로그에서 OTP를 확인할 수 있습니다.)",
+    "verifyFailed": "인증에 실패했습니다.",
+    "showEmailButton": "확인 후 이메일 표시",
+    "emailFoundTitle": "가입 이메일"
   },
   "guide": {
     "nearbyRequests": "주변 도움 요청",
@@ -38,6 +61,7 @@
     "offDutyHint": "켜면 위치를 등록하고 주변 요청을 받습니다",
     "accept": "수락하기",
     "acceptDone": "수락 완료",
+    "accepted": "수락",
     "acceptConfirmTitle": "수락 완료",
     "acceptConfirmMsg": "여행자가 확정하면 알림이 옵니다.",
     "startService": "서비스 시작",
@@ -57,7 +81,8 @@
     "locationPermTitle": "위치 권한 필요",
     "locationPermMsg": "근무 시작에는 위치 권한이 필요합니다",
     "locationErrorTitle": "위치 오류",
-    "locationErrorMsg": "현재 위치를 가져오지 못했습니다. 시뮬레이터는 기능 › 위치에서 좌표를 설정해 보세요."
+    "locationErrorMsg": "현재 위치를 가져오지 못했습니다. 시뮬레이터는 기능 › 위치에서 좌표를 설정해 보세요.",
+    "budgetMeta": "{{budget}}{{won}} · {{duration}}{{min}}"
   },
   "traveler": {
     "createRequest": "도움 요청하기",
@@ -70,6 +95,7 @@
     "startAtDone": "완료",
     "duration": "소요 시간",
     "budget": "제안 금액 (KRW)",
+    "budgetLabel": "예산",
     "locationSearch": "장소 검색 (예: 경복궁)",
     "descriptionPlaceholder": "무엇이 필요하신가요?",
     "submitting": "요청 중...",
@@ -89,7 +115,8 @@
     "cancelled": "취소된 요청입니다.",
     "newRequest": "새 요청하기",
     "locationPermTitle": "위치 권한",
-    "locationPermMsg": "현재 위치를 쓸 수 없습니다. 지도에서 탭하여 요청 위치를 선택할 수 있습니다."
+    "locationPermMsg": "현재 위치를 쓸 수 없습니다. 지도에서 탭하여 요청 위치를 선택할 수 있습니다.",
+    "viewGuideProfile": "가이드 프로필 보기 →"
   },
   "payment": {
     "title": "결제",
@@ -109,7 +136,9 @@
     "loadError": "결제 정보를 불러올 수 없습니다.",
     "waitingGuide": "가이드가 서비스를 시작하면 결제할 수 있습니다.",
     "alreadyPaid": "이미 결제가 완료되었습니다.",
-    "payFailed": "결제 처리에 실패했습니다. 다시 시도해주세요."
+    "payFailed": "결제 처리에 실패했습니다. 다시 시도해주세요.",
+    "cta": "결제하기",
+    "authorized": "결제 대기중"
   },
   "chat": {
     "placeholder": "메시지 입력...",
@@ -119,7 +148,13 @@
     "disconnected": "disconnected",
     "roomTitle": "채팅방 #{{roomId}}",
     "waitingTitle": "실시간 연결 대기",
-    "waitingMsg": "WebSocket(STOMP)가 아직 안 붙었습니다.\n\n• 백엔드(bootRun)·docker(MySQL 등) 켜져 있는지 확인\n• Metro 터미널에서 [LocalNow STOMP] 로그 확인 (원인 있으면 거기에 출력됨)"
+    "waitingMsg": "WebSocket(STOMP)가 아직 안 붙었습니다.\n\n• 백엔드(bootRun)·docker(MySQL 등) 켜져 있는지 확인\n• Metro 터미널에서 [LocalNow STOMP] 로그 확인 (원인 있으면 거기에 출력됨)",
+    "listError": "채팅 목록을 불러오지 못했습니다",
+    "noChats": "확정된 매칭이 없습니다",
+    "justNow": "방금",
+    "minutesAgo": "{{n}}분 전",
+    "hoursAgo": "{{n}}시간 전",
+    "daysAgo": "{{n}}일 전"
   },
   "review": {
     "title": "리뷰 작성",
@@ -167,5 +202,42 @@
     "min120": "120분",
     "min180": "180분",
     "min240": "240분"
+  },
+  "profileEdit": {
+    "title": "프로필 편집",
+    "profileImage": "프로필 이미지",
+    "imageHint": "탭하여 이미지 변경",
+    "basicInfo": "기본 정보",
+    "birthYear": "출생 연도",
+    "bio": "자기소개",
+    "notSet": "미설정",
+    "baseLocation": "활동 거점",
+    "setLocation": "거점 설정",
+    "certifications": "자격증",
+    "certName": "자격증 이름",
+    "addPdf": "PDF 추가",
+    "delete": "삭제",
+    "certEmptyHint": "자격증을 등록하면 여행자의 신뢰도가 높아집니다",
+    "permRequired": "권한 필요",
+    "galleryPermission": "갤러리 접근 권한이 필요합니다.",
+    "certNameRequired": "자격증 이름을 입력하세요.",
+    "loadFailed": "프로필 조회 실패",
+    "saveFailedTitle": "거점 저장 실패",
+    "deleteCertTitle": "자격증 삭제",
+    "deleteCertMsg": "정말 삭제하시겠습니까?",
+    "setLocationTitle": "활동 거점 설정",
+    "searchAddress": "주소 검색"
+  },
+  "guideProfile": {
+    "loadError": "프로필을 불러올 수 없습니다",
+    "backShort": "← 돌아가기",
+    "bio": "자기소개",
+    "languages": "언어 능력",
+    "certifications": "자격증",
+    "recentReviews": "최근 후기",
+    "noCerts": "등록된 자격증 없음",
+    "noReviews": "아직 후기가 없습니다",
+    "age": "만 {{n}}세",
+    "completedCount": "{{n}}회 완료"
   }
 }

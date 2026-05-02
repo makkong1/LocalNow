@@ -9,7 +9,11 @@
     "close": "关闭",
     "retry": "重试",
     "won": "韩元",
-    "min": "分钟"
+    "min": "分钟",
+    "back": "← 返回",
+    "errorTitle": "错误",
+    "delete": "删除",
+    "search": "搜索"
   },
   "auth": {
     "login": "登录",
@@ -27,7 +31,26 @@
     "oauthHint": "社交登录将在浏览器中打开，跳转URL遵循成功重定向设置。",
     "oauthSignupHint": "社交登录将在浏览器中打开，跳转URL遵循后端成功重定向设置。",
     "roleTraveler": "旅行者",
-    "roleGuide": "向导"
+    "roleGuide": "向导",
+    "forgotPasswordDesc": "输入邮箱接收验证码后设置新密码。仅使用社交登录的账户无法重置密码。",
+    "otpLabel": "6位验证码",
+    "newPasswordLabel": "新密码（至少4位）",
+    "newPasswordPlaceholder": "新密码",
+    "otpSentTitle": "验证码已发送",
+    "otpSentMsg": "验证码已发送至该邮箱。\n（开发环境下可在服务器控制台日志中查看OTP。）",
+    "requestFailed": "请求失败。",
+    "passwordResetFailed": "修改密码失败。",
+    "passwordResetDoneTitle": "完成",
+    "passwordResetDoneMsg": "密码已修改。请使用新密码登录。",
+    "requestOtp": "发送验证码",
+    "changePassword": "修改密码",
+    "backToLogin": "返回登录",
+    "emailHintDesc": "您的账号ID是注册时使用的邮箱。若输入的姓名和城市匹配，验证码将发送至注册邮箱。",
+    "cityAtSignup": "城市（注册时填写）",
+    "otpSentMsgEmail": "验证码已发送至注册邮箱。\n（开发环境下可在服务器控制台日志中查看OTP。）",
+    "verifyFailed": "验证失败。",
+    "showEmailButton": "验证后显示邮箱",
+    "emailFoundTitle": "注册邮箱"
   },
   "guide": {
     "nearbyRequests": "附近的请求",
@@ -38,6 +61,7 @@
     "offDutyHint": "开启后注册位置并接收请求",
     "accept": "接受",
     "acceptDone": "已接受",
+    "accepted": "已接受",
     "acceptConfirmTitle": "已接受请求",
     "acceptConfirmMsg": "旅行者确认后将通知您。",
     "startService": "开始服务",
@@ -57,7 +81,8 @@
     "locationPermTitle": "需要位置权限",
     "locationPermMsg": "开始工作需要位置权限",
     "locationErrorTitle": "位置错误",
-    "locationErrorMsg": "无法获取当前位置。模拟器请在功能 › 位置中设置坐标。"
+    "locationErrorMsg": "无法获取当前位置。模拟器请在功能 › 位置中设置坐标。",
+    "budgetMeta": "{{budget}}{{won}} · {{duration}}{{min}}"
   },
   "traveler": {
     "createRequest": "请求帮助",
@@ -70,6 +95,7 @@
     "startAtDone": "完成",
     "duration": "时长",
     "budget": "预算（韩元）",
+    "budgetLabel": "预算",
     "locationSearch": "搜索地点（例：景福宫）",
     "descriptionPlaceholder": "您需要什么帮助？",
     "submitting": "请求中...",
@@ -89,7 +115,8 @@
     "cancelled": "此请求已取消。",
     "newRequest": "新请求",
     "locationPermTitle": "位置权限",
-    "locationPermMsg": "无法获取当前位置。您可以点击地图选择请求位置。"
+    "locationPermMsg": "无法获取当前位置。您可以点击地图选择请求位置。",
+    "viewGuideProfile": "查看向导资料 →"
   },
   "payment": {
     "title": "支付",
@@ -109,7 +136,9 @@
     "loadError": "无法加载支付信息。",
     "waitingGuide": "向导开始服务后即可支付。",
     "alreadyPaid": "支付已完成。",
-    "payFailed": "支付失败，请重试。"
+    "payFailed": "支付失败，请重试。",
+    "cta": "立即支付",
+    "authorized": "等待支付"
   },
   "chat": {
     "placeholder": "输入消息...",
@@ -119,7 +148,13 @@
     "disconnected": "已断开",
     "roomTitle": "聊天室 #{{roomId}}",
     "waitingTitle": "等待连接",
-    "waitingMsg": "WebSocket（STOMP）尚未连接。\n\n• 请检查后端（bootRun）和docker（MySQL等）是否运行\n• 在Metro终端查看[LocalNow STOMP]日志"
+    "waitingMsg": "WebSocket（STOMP）尚未连接。\n\n• 请检查后端（bootRun）和docker（MySQL等）是否运行\n• 在Metro终端查看[LocalNow STOMP]日志",
+    "listError": "加载聊天列表失败",
+    "noChats": "暂无确认的匹配",
+    "justNow": "刚刚",
+    "minutesAgo": "{{n}}分钟前",
+    "hoursAgo": "{{n}}小时前",
+    "daysAgo": "{{n}}天前"
   },
   "review": {
     "title": "撰写评价",
@@ -167,5 +202,42 @@
     "min120": "120分钟",
     "min180": "180分钟",
     "min240": "240分钟"
+  },
+  "profileEdit": {
+    "title": "编辑资料",
+    "profileImage": "头像",
+    "imageHint": "点击更换图片",
+    "basicInfo": "基本信息",
+    "birthYear": "出生年份",
+    "bio": "个人简介",
+    "notSet": "未设置",
+    "baseLocation": "活动地点",
+    "setLocation": "设置地点",
+    "certifications": "资质证书",
+    "certName": "证书名称",
+    "addPdf": "添加PDF",
+    "delete": "删除",
+    "certEmptyHint": "添加资质证书可提升旅行者信任度",
+    "permRequired": "需要权限",
+    "galleryPermission": "需要相册访问权限。",
+    "certNameRequired": "请输入证书名称。",
+    "loadFailed": "加载资料失败",
+    "saveFailedTitle": "保存地点失败",
+    "deleteCertTitle": "删除证书",
+    "deleteCertMsg": "确定要删除吗？",
+    "setLocationTitle": "设置活动地点",
+    "searchAddress": "搜索地址"
+  },
+  "guideProfile": {
+    "loadError": "无法加载资料",
+    "backShort": "← 返回",
+    "bio": "个人简介",
+    "languages": "语言能力",
+    "certifications": "资质证书",
+    "recentReviews": "近期评价",
+    "noCerts": "暂无注册证书",
+    "noReviews": "暂无评价",
+    "age": "{{n}}岁",
+    "completedCount": "完成{{n}}次"
   }
 }

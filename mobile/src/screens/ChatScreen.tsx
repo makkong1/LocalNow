@@ -19,12 +19,14 @@ import { useAuth } from '../hooks/useAuth';
 import { stompClient } from '../lib/stomp-client';
 import ChatBubble from '../components/ChatBubble';
 import type { ChatMessageResponse } from '../types/api';
+import { useTranslation } from 'react-i18next';
 import type { AppStackParamList } from '../navigation/AppNavigator';
 
 type ChatScreenProps = StackScreenProps<AppStackParamList, 'ChatRoom'>;
 
 export default function ChatScreen({ route }: ChatScreenProps) {
   const { roomId } = route.params;
+  const { t } = useTranslation();
   const { userId } = useAuth();
   const stompConnected = useRealtimeConnection();
   const { data: historyMessages, isLoading } = useMessages(roomId);
@@ -70,12 +72,7 @@ export default function ChatScreen({ route }: ChatScreenProps) {
     const content = text.trim();
     if (!content) return;
     if (!stompConnected || !stompClient.isConnected) {
-      Alert.alert(
-        '실시간 연결 대기',
-        'WebSocket(STOMP)가 아직 안 붙었습니다.\n\n' +
-          '• 백엔드(bootRun)·docker(MySQL 등) 켜져 있는지 확인\n' +
-          '• Metro 터미널에서 [LocalNow STOMP] 로그 확인 (원인 있으면 거기에 출력됨)',
-      );
+      Alert.alert(t('chat.waitingTitle'), t('chat.waitingMsg'));
       return;
     }
     const clientMessageId = uuid.v4() as string;
@@ -98,12 +95,12 @@ export default function ChatScreen({ route }: ChatScreenProps) {
       keyboardVerticalOffset={96}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>채팅방 #{roomId}</Text>
+        <Text style={styles.headerTitle}>{t('chat.roomTitle', { roomId })}</Text>
         <View style={styles.connStatus}>
           <View
             style={[styles.connDot, { backgroundColor: stompConnected ? '#22c55e' : '#ef4444' }]}
           />
-          <Text style={styles.connLabel}>{stompConnected ? 'connected' : 'disconnected'}</Text>
+          <Text style={styles.connLabel}>{stompConnected ? t('chat.connected') : t('chat.disconnected')}</Text>
         </View>
       </View>
 
@@ -118,7 +115,7 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>대화를 시작해보세요</Text>
+            <Text style={styles.emptyText}>{t('chat.empty')}</Text>
           </View>
         }
       />
@@ -128,7 +125,7 @@ export default function ChatScreen({ route }: ChatScreenProps) {
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder="메시지 입력..."
+          placeholder={t('chat.placeholder')}
           placeholderTextColor="#525252"
           multiline
           testID="chat-input"
@@ -140,7 +137,7 @@ export default function ChatScreen({ route }: ChatScreenProps) {
           disabled={!text.trim()}
           testID="send-button"
         >
-          <Text style={styles.sendText}>전송</Text>
+          <Text style={styles.sendText}>{t('chat.send')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

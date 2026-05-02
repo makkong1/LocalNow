@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { AppStackParamList } from '../navigation/AppNavigator';
 import ReviewForm from '../components/ReviewForm';
@@ -13,6 +14,7 @@ import ReviewForm from '../components/ReviewForm';
 type ReviewScreenProps = StackScreenProps<AppStackParamList, 'Review'>;
 
 export default function ReviewScreen({ route, navigation }: ReviewScreenProps) {
+  const { t } = useTranslation();
   const { requestId, guideId } = route.params;
   const [submitted, setSubmitted] = useState(false);
 
@@ -20,14 +22,14 @@ export default function ReviewScreen({ route, navigation }: ReviewScreenProps) {
     return (
       <View style={styles.successContainer}>
         <Text testID="review-success-message" style={styles.successTitle}>
-          리뷰를 작성하셨습니다. 감사합니다.
+          {t('review.done')}
         </Text>
         <TouchableOpacity
           testID="go-to-traveler-button"
           style={styles.button}
           onPress={() => navigation.navigate('MainTabs', { screen: 'Traveler' })}
         >
-          <Text style={styles.buttonText}>여행자 화면으로</Text>
+          <Text style={styles.buttonText}>{t('review.backToTraveler')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -35,7 +37,7 @@ export default function ReviewScreen({ route, navigation }: ReviewScreenProps) {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.pageTitle}>리뷰 작성</Text>
+      <Text style={styles.pageTitle}>{t('review.title')}</Text>
       <ReviewForm
         requestId={requestId}
         guideId={guideId}

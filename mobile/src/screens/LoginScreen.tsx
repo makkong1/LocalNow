@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { openBackendOAuth2 } from '../lib/oauth-redirect';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -19,6 +20,7 @@ type LoginNavProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavProp>();
+  const { t } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,12 +60,10 @@ export default function LoginScreen() {
           <Text style={styles.oauthBtnText}>GitHub</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.oauthHint}>
-        소셜 로그인은 브라우저로 열리며, 완료 URL은 success-redirect 설정을 따릅니다.
-      </Text>
+      <Text style={styles.oauthHint}>{t('auth.oauthHint')}</Text>
       <TextInput
         style={styles.input}
-        placeholder="이메일"
+        placeholder={t('auth.email')}
         placeholderTextColor="#525252"
         value={email}
         onChangeText={setEmail}
@@ -73,7 +73,7 @@ export default function LoginScreen() {
       />
       <TextInput
         style={styles.input}
-        placeholder="비밀번호"
+        placeholder={t('auth.password')}
         placeholderTextColor="#525252"
         value={password}
         onChangeText={setPassword}
@@ -90,20 +90,20 @@ export default function LoginScreen() {
         {loading ? (
           <ActivityIndicator color="#0a0a0a" />
         ) : (
-          <Text style={styles.buttonText}>로그인</Text>
+          <Text style={styles.buttonText}>{t('auth.login')}</Text>
         )}
       </TouchableOpacity>
       <View style={styles.recoveryRow}>
         <TouchableOpacity onPress={() => navigation.navigate('EmailHint')} testID="email-hint-link">
-          <Text style={styles.linkMuted}>이메일 찾기</Text>
+          <Text style={styles.linkMuted}>{t('auth.emailHint')}</Text>
         </TouchableOpacity>
         <Text style={styles.recoverySep}> · </Text>
         <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} testID="forgot-password-link">
-          <Text style={styles.linkMuted}>비밀번호 재설정</Text>
+          <Text style={styles.linkMuted}>{t('auth.forgotPassword')}</Text>
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={() => navigation.navigate('Signup')} testID="signup-link">
-        <Text style={styles.link}>회원가입</Text>
+        <Text style={styles.link}>{t('auth.signup')}</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

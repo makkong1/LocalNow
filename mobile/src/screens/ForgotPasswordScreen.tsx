@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { AuthStackParamList } from '../navigation/AuthNavigator';
@@ -19,6 +20,7 @@ type Nav = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation<Nav>();
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
   const [ticketId, setTicketId] = useState<string | null>(null);
@@ -33,15 +35,12 @@ export default function ForgotPasswordScreen() {
     const res = await postPasswordResetRequest({ email: email.trim() });
     setLoading(false);
     if (!res.success || !res.data) {
-      setError(res.error?.message ?? '요청에 실패했습니다.');
+      setError(res.error?.message ?? t('auth.requestFailed'));
       return;
     }
     setTicketId(res.data.ticketId);
     setStep(2);
-    Alert.alert(
-      '인증번호 발송',
-      '해당 이메일로 인증번호가 발송되었습니다.\n(개발 환경에서는 서버 콘솔 로그에서 OTP를 확인할 수 있습니다.)',
-    );
+    Alert.alert(t('auth.otpSentTitle'), t('auth.otpSentMsg'));
   }
 
   async function handleConfirm() {
@@ -55,11 +54,11 @@ export default function ForgotPasswordScreen() {
     });
     setLoading(false);
     if (!res.success) {
-      setError(res.error?.message ?? '비밀번호 변경에 실패했습니다.');
+      setError(res.error?.message ?? t('auth.passwordResetFailed'));
       return;
     }
-    Alert.alert('완료', '비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.', [
-      { text: '확인', onPress: () => navigation.navigate('Login') },
+    Alert.alert(t('auth.passwordResetDoneTitle'), t('auth.passwordResetDoneMsg'), [
+      { text: t('common.confirm'), onPress: () => navigation.navigate('Login') },
     ]);
   }
 
@@ -69,16 +68,13 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>비밀번호 재설정</Text>
-        <Text style={styles.desc}>
-          가입 시 이메일로 인증번호를 보낸 뒤, 새 비밀번호를 설정합니다. 소셜 전용 계정은 비밀번호 재설정을 할 수
-          없습니다.
-        </Text>
+        <Text style={styles.title}>{t('auth.forgotPassword')}</Text>
+        <Text style={styles.desc}>{t('auth.forgotPasswordDesc')}</Text>
 
         {step === 1 ? (
           <TextInput
             style={styles.input}
-            placeholder="이메일"
+            placeholder={t('auth.email')}
             placeholderTextColor="#525252"
             value={email}
             onChangeText={setEmail}
@@ -87,7 +83,7 @@ export default function ForgotPasswordScreen() {
           />
         ) : (
           <>
-            <Text style={styles.stepLabel}>인증번호 6자리</Text>
+            <Text style={styles.stepLabel}>{t('auth.otpLabel')}</Text>
             <TextInput
               style={styles.input}
               placeholder="000000"
@@ -97,10 +93,10 @@ export default function ForgotPasswordScreen() {
               keyboardType="number-pad"
               maxLength={6}
             />
-            <Text style={styles.stepLabel}>새 비밀번호 (4자 이상)</Text>
+            <Text style={styles.stepLabel}>{t('auth.newPasswordLabel')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="새 비밀번호"
+              placeholder={t('auth.newPasswordPlaceholder')}
               placeholderTextColor="#525252"
               value={newPassword}
               onChangeText={setNewPassword}
@@ -120,7 +116,7 @@ export default function ForgotPasswordScreen() {
             {loading ? (
               <ActivityIndicator color="#0a0a0a" />
             ) : (
-              <Text style={styles.buttonText}>인증번호 받기</Text>
+              <Text style={styles.buttonText}>{t('auth.requestOtp')}</Text>
             )}
           </TouchableOpacity>
         ) : (
@@ -132,13 +128,13 @@ export default function ForgotPasswordScreen() {
             {loading ? (
               <ActivityIndicator color="#0a0a0a" />
             ) : (
-              <Text style={styles.buttonText}>비밀번호 변경</Text>
+              <Text style={styles.buttonText}>{t('auth.changePassword')}</Text>
             )}
           </TouchableOpacity>
         )}
 
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.link}>로그인으로</Text>
+          <Text style={styles.link}>{t('auth.backToLogin')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
