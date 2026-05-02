@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.localnow.app",
       "infoPlist": {
-        "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true },
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
         "NSLocationWhenInUseUsageDescription": "현재 위치를 지도에 표시하고 주변 가이드를 찾기 위해 사용합니다."
       }
     },
@@ -36,7 +38,8 @@
     "plugins": [
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "expo-localization"
     ]
   }
 }
