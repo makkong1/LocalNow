@@ -13,6 +13,14 @@ const LANG_KEY = 'app_language';
 export const SUPPORTED_LANGUAGES = ['ko', 'en', 'zh', 'ja'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
+/** 언어 선택 UI 용 표시 이름 (각 언어 자체 표기) */
+export const LANGUAGE_DISPLAY_NAMES: Record<SupportedLanguage, string> = {
+  ko: '한국어',
+  en: 'English',
+  zh: '中文',
+  ja: '日本語',
+};
+
 export async function initI18n(): Promise<void> {
   const saved = await SecureStore.getItemAsync(LANG_KEY);
   const deviceLocale = Localization.getLocales()[0]?.languageCode ?? 'ko';

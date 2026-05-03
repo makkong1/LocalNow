@@ -18,7 +18,13 @@ describe('GuideOfferCard', () => {
   it('calls onConfirm with guideId when confirm button is pressed', () => {
     const mockConfirm = jest.fn();
     const { getByTestId } = render(
-      <GuideOfferCard offer={mockOffer} onConfirm={mockConfirm} isConfirming={false} />,
+      <GuideOfferCard
+        offer={mockOffer}
+        hasCertification={false}
+        onPressProfile={jest.fn()}
+        onConfirm={mockConfirm}
+        isConfirming={false}
+      />,
     );
 
     fireEvent.press(getByTestId('confirm-button'));
@@ -27,7 +33,13 @@ describe('GuideOfferCard', () => {
 
   it('disables confirm button when isConfirming is true', () => {
     const { getByTestId } = render(
-      <GuideOfferCard offer={mockOffer} onConfirm={jest.fn()} isConfirming={true} />,
+      <GuideOfferCard
+        offer={mockOffer}
+        hasCertification={false}
+        onPressProfile={jest.fn()}
+        onConfirm={jest.fn()}
+        isConfirming={true}
+      />,
     );
     expect(getByTestId('confirm-button')).toBeDisabled();
   });
@@ -35,7 +47,13 @@ describe('GuideOfferCard', () => {
   it('does not call onConfirm when button is disabled', () => {
     const mockConfirm = jest.fn();
     const { getByTestId } = render(
-      <GuideOfferCard offer={mockOffer} onConfirm={mockConfirm} isConfirming={true} />,
+      <GuideOfferCard
+        offer={mockOffer}
+        hasCertification={false}
+        onPressProfile={jest.fn()}
+        onConfirm={mockConfirm}
+        isConfirming={true}
+      />,
     );
 
     fireEvent.press(getByTestId('confirm-button'));

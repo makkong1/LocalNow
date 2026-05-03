@@ -239,5 +239,9 @@
     "noReviews": "暂无评价",
     "age": "{{n}}岁",
     "completedCount": "完成{{n}}次"
+  },
+  "settings": {
+    "language": "语言设置",
+    "languageChanged": "语言已更改"
   }
 }

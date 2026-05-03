@@ -239,5 +239,9 @@
     "noReviews": "아직 후기가 없습니다",
     "age": "만 {{n}}세",
     "completedCount": "{{n}}회 완료"
+  },
+  "settings": {
+    "language": "언어 설정",
+    "languageChanged": "언어가 변경됐습니다"
   }
 }

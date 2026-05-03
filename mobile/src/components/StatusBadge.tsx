@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { HelpRequestStatus, MatchOfferStatus } from '../types/api';
 
 interface StatusBadgeProps {
@@ -18,18 +19,8 @@ const STATUS_COLOR: Record<string, string> = {
   PENDING: '#eab308',
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  OPEN: '대기중',
-  MATCHED: '확정됨',
-  CONFIRMED: '확정됨',
-  IN_PROGRESS: '진행중',
-  COMPLETED: '완료',
-  CANCELLED: '취소',
-  REJECTED: '거절됨',
-  PENDING: '대기중',
-};
-
 export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
+  const { t } = useTranslation();
   const color = STATUS_COLOR[status] ?? '#525252';
   return (
     <View
@@ -41,7 +32,7 @@ export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
     >
       <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.label, size === 'md' && styles.labelMd, { color }]}>
-        {STATUS_LABEL[status] ?? status}
+        {t(`status.${status}`, { defaultValue: status })}
       </Text>
     </View>
   );

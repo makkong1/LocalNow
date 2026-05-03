@@ -239,5 +239,9 @@
     "noReviews": "まだレビューがありません",
     "age": "{{n}}歳",
     "completedCount": "{{n}}回完了"
+  },
+  "settings": {
+    "language": "言語設定",
+    "languageChanged": "言語を変更しました"
   }
 }

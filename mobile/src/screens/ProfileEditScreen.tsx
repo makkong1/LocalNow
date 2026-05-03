@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,6 +27,12 @@ import { useGuideBaseLocation, useSaveGuideBaseLocation } from '../hooks/useGuid
 import { apiFetch } from '../lib/api-client';
 import LocationMap from '../components/LocationMap';
 import type { UserProfileResponse } from '../types/api';
+import {
+  changeLanguage,
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_DISPLAY_NAMES,
+  type SupportedLanguage,
+} from '../i18n';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
@@ -48,6 +55,7 @@ function BaseLocationModal({
   onSave: () => void;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation();
   const [lat, setLat] = useState(initialLat ?? 37.5665);
   const [lng, setLng] = useState(initialLng ?? 126.978);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,8 +91,8 @@ function BaseLocationModal({
           const msg =
             err && typeof err === 'object' && 'message' in err
               ? String((err as { message: unknown }).message)
-              : '저장에 실패했습니다.';
-          Alert.alert('거점 저장 실패', msg);
+              : t('profileEdit.saveFailedTitle');
+          Alert.alert(t('profileEdit.saveFailedTitle'), msg);
         },
       },
     );
@@ -94,16 +102,16 @@ function BaseLocationModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
       <View style={modalStyles.container}>
         <View style={modalStyles.header}>
-          <Text style={modalStyles.title}>활동 거점 설정</Text>
+          <Text style={modalStyles.title}>{t('profileEdit.setLocationTitle')}</Text>
           <TouchableOpacity onPress={onDismiss} testID="base-loc-cancel">
-            <Text style={modalStyles.cancelText}>취소</Text>
+            <Text style={modalStyles.cancelText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={modalStyles.searchRow}>
           <TextInput
             style={modalStyles.searchInput}
-            placeholder="주소 검색"
+            placeholder={t('profileEdit.searchAddress')}
             placeholderTextColor="#525252"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -120,7 +128,7 @@ function BaseLocationModal({
             {isSearching ? (
               <ActivityIndicator color="#0a0a0a" size="small" />
             ) : (
-              <Text style={modalStyles.searchBtnText}>검색</Text>
+              <Text style={modalStyles.searchBtnText}>{t('common.search')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -173,7 +181,7 @@ function BaseLocationModal({
             {save.isPending ? (
               <ActivityIndicator color="#0a0a0a" size="small" />
             ) : (
-              <Text style={modalStyles.saveBtnText}>저장</Text>
+              <Text style={modalStyles.saveBtnText}>{t('common.save')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -183,6 +191,7 @@ function BaseLocationModal({
 }
 
 export default function ProfileEditScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const { role } = useAuth();
   const [certName, setCertName] = useState('');
@@ -192,7 +201,7 @@ export default function ProfileEditScreen() {
     queryKey: ['auth', 'me'],
     queryFn: async () => {
       const res = await apiFetch<UserProfileResponse>('/auth/me');
-      if (!res.success || !res.data) throw new Error(res.error?.message ?? '프로필 조회 실패');
+      if (!res.success || !res.data) throw new Error(res.error?.message ?? t('profileEdit.loadFailed'));
       return res.data;
     },
   });
@@ -206,7 +215,7 @@ export default function ProfileEditScreen() {
   async function handlePickImage() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+      Alert.alert(t('profileEdit.permRequired'), t('profileEdit.galleryPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -217,14 +226,14 @@ export default function ProfileEditScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       uploadImageMutation.mutate(result.assets[0].uri, {
-        onError: (err) => Alert.alert('오류', err.message),
+        onError: (err) => Alert.alert(t('common.errorTitle'), err.message),
       });
     }
   }
 
   async function handleAddCertification() {
     if (!certName.trim()) {
-      Alert.alert('자격증 이름을 입력하세요.');
+      Alert.alert(t('profileEdit.certNameRequired'));
       return;
     }
     const result = await DocumentPicker.getDocumentAsync({
@@ -237,20 +246,20 @@ export default function ProfileEditScreen() {
       { name: certName.trim(), fileUri: asset.uri },
       {
         onSuccess: () => setCertName(''),
-        onError: (err) => Alert.alert('오류', err.message),
+        onError: (err) => Alert.alert(t('common.errorTitle'), err.message),
       },
     );
   }
 
   function handleDeleteCertification(certId: number) {
-    Alert.alert('자격증 삭제', '정말 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
+    Alert.alert(t('profileEdit.deleteCertTitle'), t('profileEdit.deleteCertMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '삭제',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () =>
           deleteCertMutation.mutate(certId, {
-            onError: (err) => Alert.alert('오류', err.message),
+            onError: (err) => Alert.alert(t('common.errorTitle'), err.message),
           }),
       },
     ]);
@@ -265,20 +274,46 @@ export default function ProfileEditScreen() {
         .slice(0, 2)
     : '?';
 
+  const resolvedBase = (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0];
+  const currentLang = (
+    SUPPORTED_LANGUAGES.includes(resolvedBase as SupportedLanguage) ? resolvedBase : 'ko'
+  ) as SupportedLanguage;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.langSection}>
+        <Text style={styles.langSectionTitle}>{t('settings.language')}</Text>
+        <View style={styles.langRow}>
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const active = currentLang === lang;
+            return (
+              <TouchableOpacity
+                key={lang}
+                style={[styles.langBtn, active ? styles.langBtnActive : styles.langBtnInactive]}
+                onPress={() => void changeLanguage(lang)}
+                testID={`lang-button-${lang}`}
+              >
+                <Text style={[styles.langBtnText, active && styles.langBtnTextActive]}>
+                  {LANGUAGE_DISPLAY_NAMES[lang]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} testID="back-button">
-          <Text style={styles.backText}>← 뒤로</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>프로필 편집</Text>
+        <Text style={styles.title}>{t('profileEdit.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       {/* Profile Image Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>프로필 이미지</Text>
+        <Text style={styles.sectionTitle}>{t('profileEdit.profileImage')}</Text>
         <TouchableOpacity
           style={styles.avatarContainer}
           onPress={handlePickImage}
@@ -298,31 +333,35 @@ export default function ProfileEditScreen() {
             </View>
           )}
         </TouchableOpacity>
-        <Text style={styles.avatarHint}>탭하여 이미지 변경</Text>
+        <Text style={styles.avatarHint}>{t('profileEdit.imageHint')}</Text>
       </View>
 
       {/* Basic Info Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>기본 정보</Text>
+        <Text style={styles.sectionTitle}>{t('profileEdit.basicInfo')}</Text>
 
-        <Text style={styles.fieldLabel}>이름</Text>
+        <Text style={styles.fieldLabel}>{t('auth.name')}</Text>
         <View style={[styles.input, styles.readOnlyInput]}>
           <Text style={styles.readOnlyText}>
             {profileLoading ? '...' : (profile?.name ?? '')}
           </Text>
         </View>
 
-        <Text style={styles.fieldLabel}>출생 연도</Text>
+        <Text style={styles.fieldLabel}>{t('profileEdit.birthYear')}</Text>
         <View style={[styles.input, styles.readOnlyInput]}>
           <Text style={styles.readOnlyText}>
-            {profileLoading ? '...' : profile?.birthYear != null ? String(profile.birthYear) : '미설정'}
+            {profileLoading
+              ? '...'
+              : profile?.birthYear != null
+                ? String(profile.birthYear)
+                : t('profileEdit.notSet')}
           </Text>
         </View>
 
-        <Text style={styles.fieldLabel}>자기소개</Text>
+        <Text style={styles.fieldLabel}>{t('profileEdit.bio')}</Text>
         <View style={[styles.input, styles.readOnlyInput, styles.bioInput]}>
           <Text style={styles.readOnlyText}>
-            {profileLoading ? '...' : (profile?.bio ?? '미설정')}
+            {profileLoading ? '...' : (profile?.bio ?? t('profileEdit.notSet'))}
           </Text>
         </View>
       </View>
@@ -330,16 +369,18 @@ export default function ProfileEditScreen() {
       {/* Base Location Section — GUIDE only */}
       {role === 'GUIDE' && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>활동 거점</Text>
+          <Text style={styles.sectionTitle}>{t('profileEdit.baseLocation')}</Text>
           <Text style={styles.baseLocText} testID="base-loc-display">
-            {baseLoc ? `${baseLoc.lat.toFixed(4)}, ${baseLoc.lng.toFixed(4)}` : '미설정'}
+            {baseLoc
+              ? `${baseLoc.lat.toFixed(4)}, ${baseLoc.lng.toFixed(4)}`
+              : t('profileEdit.notSet')}
           </Text>
           <TouchableOpacity
             style={styles.setLocBtn}
             onPress={() => setShowBaseLocModal(true)}
             testID="set-base-location-button"
           >
-            <Text style={styles.setLocBtnText}>거점 설정</Text>
+            <Text style={styles.setLocBtnText}>{t('profileEdit.setLocation')}</Text>
           </TouchableOpacity>
           <BaseLocationModal
             key={showBaseLocModal ? 'open' : 'closed'}
@@ -355,7 +396,7 @@ export default function ProfileEditScreen() {
       {/* Certifications Section — GUIDE only */}
       {role === 'GUIDE' && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>자격증</Text>
+          <Text style={styles.sectionTitle}>{t('profileEdit.certifications')}</Text>
 
           {certsLoading ? (
             <ActivityIndicator color="#f59e0b" style={styles.certsLoader} />
@@ -370,18 +411,18 @@ export default function ProfileEditScreen() {
                   disabled={deleteCertMutation.isPending}
                   testID={`delete-cert-${cert.id}`}
                 >
-                  <Text style={styles.deleteText}>삭제</Text>
+                  <Text style={styles.deleteText}>{t('profileEdit.delete')}</Text>
                 </TouchableOpacity>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyHint}>자격증을 등록하면 여행자의 신뢰도가 높아집니다</Text>
+            <Text style={styles.emptyHint}>{t('profileEdit.certEmptyHint')}</Text>
           )}
 
           <View style={styles.addCertRow}>
             <TextInput
               style={styles.certNameInput}
-              placeholder="자격증 이름"
+              placeholder={t('profileEdit.certName')}
               placeholderTextColor="#525252"
               value={certName}
               onChangeText={setCertName}
@@ -396,7 +437,7 @@ export default function ProfileEditScreen() {
               {uploadCertMutation.isPending ? (
                 <ActivityIndicator color="#0a0a0a" size="small" />
               ) : (
-                <Text style={styles.addCertBtnText}>PDF 추가</Text>
+                <Text style={styles.addCertBtnText}>{t('profileEdit.addPdf')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -414,6 +455,50 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
+  },
+  langSection: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#141414',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  langSectionTitle: {
+    color: '#737373',
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.8,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
+  langRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  langBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  langBtnInactive: {
+    backgroundColor: '#1c1c1c',
+    borderColor: '#262626',
+  },
+  langBtnActive: {
+    backgroundColor: '#f59e0b',
+    borderColor: '#f59e0b',
+  },
+  langBtnText: {
+    color: '#a3a3a3',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  langBtnTextActive: {
+    color: '#0a0a0a',
+    fontWeight: '700',
   },
   header: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { HelpRequestResponse } from '../types/api';
 import StatusBadge from './StatusBadge';
 
@@ -18,6 +19,7 @@ export default function RequestCard({
   isAccepted = false,
   distanceKm,
 }: RequestCardProps) {
+  const { t } = useTranslation();
   const isEmergency = request.requestType === 'EMERGENCY';
   const canAccept = request.status === 'OPEN' && !isAccepted;
 
@@ -28,14 +30,19 @@ export default function RequestCard({
           testID="request-type"
           style={[styles.type, isEmergency && styles.emergencyType]}
         >
-          {request.requestType}
+          {t(`requestType.${request.requestType}`, { defaultValue: request.requestType })}
         </Text>
         <StatusBadge status={request.status} />
       </View>
       <Text style={styles.description}>{request.description}</Text>
       <View style={styles.metaRow}>
         <Text style={styles.meta}>
-          {request.budgetKrw.toLocaleString()}원 · {request.durationMin}분
+          {t('guide.budgetMeta', {
+            budget: request.budgetKrw.toLocaleString(),
+            won: t('common.won'),
+            duration: request.durationMin,
+            min: t('common.min'),
+          })}
         </Text>
         {distanceKm != null && <Text style={styles.meta}>{distanceKm.toFixed(1)} km</Text>}
       </View>
@@ -46,11 +53,11 @@ export default function RequestCard({
           onPress={() => onAccept(request.id)}
           disabled={isAccepting}
         >
-          <Text style={styles.acceptText}>{isAccepting ? '처리 중...' : '수락하기'}</Text>
+          <Text style={styles.acceptText}>{isAccepting ? t('common.processing') : t('guide.accept')}</Text>
         </TouchableOpacity>
       ) : isAccepted ? (
         <TouchableOpacity testID="accept-button" style={styles.acceptButtonDone} disabled>
-          <Text style={styles.acceptDoneText}>수락 완료</Text>
+          <Text style={styles.acceptDoneText}>{t('guide.acceptDone')}</Text>
         </TouchableOpacity>
       ) : null}
     </View>

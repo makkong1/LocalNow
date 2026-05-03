@@ -264,7 +264,7 @@ export default function TravelerScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const { data: requestsPage, isLoading } = useMyRequests();
   const createRequest = useCreateRequest();

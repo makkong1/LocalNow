@@ -15,12 +15,18 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../hooks/useAuth';
 import type { AuthStackParamList } from '../navigation/AuthNavigator';
+import {
+  changeLanguage,
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_DISPLAY_NAMES,
+  type SupportedLanguage,
+} from '../i18n';
 
 type LoginNavProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavProp>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,12 +44,34 @@ export default function LoginScreen() {
     // On success isLoggedIn becomes true → RootNavigator switches to AppNavigator
   }
 
+  const resolvedBase = (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0];
+  const currentLang = (
+    SUPPORTED_LANGUAGES.includes(resolvedBase as SupportedLanguage) ? resolvedBase : 'ko'
+  ) as SupportedLanguage;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Text style={styles.title}>LocalNow</Text>
+      <View style={styles.langCompactRow}>
+        {SUPPORTED_LANGUAGES.map((lang, index) => (
+          <React.Fragment key={lang}>
+            {index > 0 ? <Text style={styles.langSep}> · </Text> : null}
+            <TouchableOpacity onPress={() => void changeLanguage(lang)} testID={`login-lang-${lang}`}>
+              <Text
+                style={[
+                  styles.langCompactLabel,
+                  currentLang === lang && styles.langCompactLabelActive,
+                ]}
+              >
+                {LANGUAGE_DISPLAY_NAMES[lang]}
+              </Text>
+            </TouchableOpacity>
+          </React.Fragment>
+        ))}
+      </View>
       <View style={styles.oauthRow}>
         <TouchableOpacity
           style={styles.oauthBtn}
@@ -144,8 +172,27 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 32,
+    marginBottom: 12,
     textAlign: 'center',
+  },
+  langCompactRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  langSep: {
+    color: '#525252',
+    fontSize: 13,
+  },
+  langCompactLabel: {
+    color: '#a3a3a3',
+    fontSize: 13,
+  },
+  langCompactLabelActive: {
+    color: '#f59e0b',
+    fontWeight: '600',
   },
   input: {
     backgroundColor: '#141414',

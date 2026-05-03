@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { AppStackParamList } from '../navigation/AppNavigator';
 import { usePublicProfile } from '../hooks/usePublicProfile';
@@ -24,6 +25,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 }
 
 export default function GuideProfileScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const { userId } = route.params;
   const { data: profile, isLoading, isError } = usePublicProfile(userId);
 
@@ -40,9 +42,9 @@ export default function GuideProfileScreen({ route, navigation }: Props) {
   if (isError || !profile) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>프로필을 불러올 수 없습니다</Text>
+        <Text style={styles.errorText}>{t('guideProfile.loadError')}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>← 돌아가기</Text>
+          <Text style={styles.backLink}>{t('guideProfile.backShort')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -59,12 +61,10 @@ export default function GuideProfileScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* 뒤로 가기 */}
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backLink}>← 뒤로</Text>
+        <Text style={styles.backLink}>{t('common.back')}</Text>
       </TouchableOpacity>
 
-      {/* 헤더 섹션 */}
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
@@ -74,30 +74,28 @@ export default function GuideProfileScreen({ route, navigation }: Props) {
             <Text style={styles.name}>{profile.name}</Text>
             {hasCertification && (
               <View style={styles.certBadge}>
-                <Text style={styles.certBadgeText}>인증됨</Text>
+                <Text style={styles.certBadgeText}>{t('offer.verified')}</Text>
               </View>
             )}
           </View>
           {profile.birthYear != null && (
-            <Text style={styles.age}>만 {currentYear - profile.birthYear}세</Text>
+            <Text style={styles.age}>{t('guideProfile.age', { n: currentYear - profile.birthYear })}</Text>
           )}
           <StarRating rating={profile.avgRating} count={profile.ratingCount} />
-          <Text style={styles.completedCount}>{profile.completedCount}회 완료</Text>
+          <Text style={styles.completedCount}>{t('guideProfile.completedCount', { n: profile.completedCount })}</Text>
         </View>
       </View>
 
-      {/* 자기소개 섹션 */}
       {profile.bio != null && profile.bio.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>자기소개</Text>
+          <Text style={styles.sectionTitle}>{t('guideProfile.bio')}</Text>
           <Text style={styles.bio}>{profile.bio}</Text>
         </View>
       )}
 
-      {/* 언어 능력 섹션 */}
       {profile.languages.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>언어 능력</Text>
+          <Text style={styles.sectionTitle}>{t('guideProfile.languages')}</Text>
           <View style={styles.badges}>
             {profile.languages.map((lang) => (
               <View key={lang} style={styles.langBadge}>
@@ -108,11 +106,10 @@ export default function GuideProfileScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {/* 자격증 섹션 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>자격증</Text>
+        <Text style={styles.sectionTitle}>{t('guideProfile.certifications')}</Text>
         {profile.certifications.length === 0 ? (
-          <Text style={styles.emptyText}>등록된 자격증 없음</Text>
+          <Text style={styles.emptyText}>{t('guideProfile.noCerts')}</Text>
         ) : (
           profile.certifications.map((cert) => (
             <View key={cert.id} style={styles.certRow}>
@@ -126,11 +123,10 @@ export default function GuideProfileScreen({ route, navigation }: Props) {
         )}
       </View>
 
-      {/* 후기 섹션 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>최근 후기</Text>
+        <Text style={styles.sectionTitle}>{t('guideProfile.recentReviews')}</Text>
         {profile.recentReviews.length === 0 ? (
-          <Text style={styles.emptyText}>아직 후기가 없습니다</Text>
+          <Text style={styles.emptyText}>{t('guideProfile.noReviews')}</Text>
         ) : (
           profile.recentReviews.slice(0, 5).map((review) => (
             <View key={review.id} style={styles.reviewCard}>

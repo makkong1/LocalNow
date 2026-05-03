@@ -239,5 +239,9 @@
     "noReviews": "No reviews yet",
     "age": "Age {{n}}",
     "completedCount": "{{n}} completed"
+  },
+  "settings": {
+    "language": "Language",
+    "languageChanged": "Language updated"
   }
 }
