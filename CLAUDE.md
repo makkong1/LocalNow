@@ -37,7 +37,7 @@ localNow/
 - NativeWind v4 (Tailwind CSS 문법으로 RN 스타일링)
 - TanStack Query v5 (서버 상태)
 - `@stomp/stompjs` 로 백엔드 WebSocket 직접 연결 (Native WebSocket, SockJS 불필요)
-- `react-native-maps` + OpenStreetMap 타일 (지도. API 키 불필요)
+- `@maplibre/maplibre-react-native` v11+ + CARTO Dark Matter 벡터 스타일 (지도. 계정·API 키 불필요)
 - `expo-location` (기기 GPS 접근)
 - `expo-secure-store` (JWT 저장. AsyncStorage 금지)
 - React Navigation v6 (Stack + Bottom Tab)
@@ -84,7 +84,7 @@ cd backend && ./gradlew bootRun       # 서버 실행 (docker compose up 선행)
 # --- mobile ---
 cd mobile && npx expo start           # Metro 개발 서버 (Expo Go 또는 시뮬레이터)
 cd mobile && npx expo run:ios         # iOS 시뮬레이터 빌드 (Xcode 필요)
-cd mobile && npx expo run:android     # Android 에뮬레이터 빌드 (Android Studio 필요)
+# Android 네이티브 빌드는 예정 (필요 시 prebuild 후 run:android)
 cd mobile && npm run lint             # ESLint
 cd mobile && npm test                 # Jest
 

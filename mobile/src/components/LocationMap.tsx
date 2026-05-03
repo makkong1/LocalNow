@@ -1,6 +1,8 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import MapView, { Marker, UrlTile, MapPressEvent } from 'react-native-maps';
+import { View, StyleSheet } from 'react-native';
+import MapLibreGL from '@maplibre/maplibre-react-native';
+
+const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 interface LocationMapProps {
   lat: number;
@@ -10,44 +12,56 @@ interface LocationMapProps {
 }
 
 export default function LocationMap({ lat, lng, onLocationChange, markers }: LocationMapProps) {
-  function handlePress(e: MapPressEvent) {
+  function handleMapPress(feature: GeoJSON.Feature<GeoJSON.Point>) {
     if (onLocationChange) {
-      const { latitude, longitude } = e.nativeEvent.coordinate;
-      onLocationChange(latitude, longitude);
+      const [pressLng, pressLat] = feature.geometry.coordinates;
+      onLocationChange(pressLat, pressLng);
     }
   }
 
   return (
-    <MapView
+    <MapLibreGL.MapView
       style={styles.map}
-      region={{
-        latitude: lat,
-        longitude: lng,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }}
-      onPress={onLocationChange ? handlePress : undefined}
+      styleURL={DARK_STYLE}
+      onPress={onLocationChange ? handleMapPress : undefined}
     >
-      <UrlTile
-        urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        maximumZ={19}
-        flipY={false}
+      <MapLibreGL.Camera
+        centerCoordinate={[lng, lat]}
+        zoomLevel={14}
+        animationDuration={300}
       />
-      <Marker coordinate={{ latitude: lat, longitude: lng }} pinColor="#f59e0b" />
+      <MapLibreGL.UserLocation visible={true} />
+      <MapLibreGL.PointAnnotation id="selected-location" coordinate={[lng, lat]}>
+        <View style={styles.amberMarker} />
+      </MapLibreGL.PointAnnotation>
       {markers?.map((m) => (
-        <Marker
-          key={m.id}
-          coordinate={{ latitude: m.lat, longitude: m.lng }}
-          title={m.title}
-          pinColor="white"
-        />
+        <MapLibreGL.PointAnnotation key={m.id} id={m.id} coordinate={[m.lng, m.lat]}>
+          <View style={styles.whiteMarker} />
+          <MapLibreGL.Callout title={m.title} />
+        </MapLibreGL.PointAnnotation>
       ))}
-    </MapView>
+    </MapLibreGL.MapView>
   );
 }
 
 const styles = StyleSheet.create({
   map: {
     flex: 1,
+  },
+  amberMarker: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#f59e0b',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  whiteMarker: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#a3a3a3',
   },
 });

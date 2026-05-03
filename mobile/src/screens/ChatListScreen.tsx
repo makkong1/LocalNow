@@ -7,19 +7,22 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useChatRooms } from '../hooks/useChat';
 import type { ChatRoomSummaryResponse } from '../types/api';
 import type { AppStackParamList } from '../navigation/AppNavigator';
 
-function formatTime(iso: string | null): string {
+type TFunction = (key: string, opts?: Record<string, unknown>) => string;
+
+function formatTime(iso: string | null, t: TFunction): string {
   if (!iso) return '';
   const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (diffMin < 1) return '방금';
-  if (diffMin < 60) return `${diffMin}분 전`;
+  if (diffMin < 1) return t('chat.justNow');
+  if (diffMin < 60) return t('chat.minutesAgo', { n: diffMin });
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}시간 전`;
-  return `${Math.floor(diffHr / 24)}일 전`;
+  if (diffHr < 24) return t('chat.hoursAgo', { n: diffHr });
+  return t('chat.daysAgo', { n: Math.floor(diffHr / 24) });
 }
 
 function ChatRoomRow({
@@ -29,6 +32,7 @@ function ChatRoomRow({
   room: ChatRoomSummaryResponse;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <TouchableOpacity
       testID={`chat-room-row-${room.roomId}`}
@@ -41,17 +45,18 @@ function ChatRoomRow({
           <Text style={styles.typeBadge}>{room.requestType}</Text>
         </View>
         <Text style={styles.preview} numberOfLines={1}>
-          {room.lastMessagePreview ?? '대화를 시작해보세요'}
+          {room.lastMessagePreview ?? t('chat.empty')}
         </Text>
       </View>
       {room.lastMessageAt && (
-        <Text style={styles.time}>{formatTime(room.lastMessageAt)}</Text>
+        <Text style={styles.time}>{formatTime(room.lastMessageAt, t)}</Text>
       )}
     </TouchableOpacity>
   );
 }
 
 export default function ChatListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { data: rooms, isLoading, isError, refetch } = useChatRooms();
 
@@ -67,10 +72,10 @@ export default function ChatListScreen() {
     return (
       <View style={styles.center}>
         <Text testID="chat-list-error" style={styles.errorText}>
-          채팅 목록을 불러오지 못했습니다
+          {t('chat.listError')}
         </Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-          <Text style={styles.retryText}>다시 시도</Text>
+          <Text style={styles.retryText}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -80,7 +85,7 @@ export default function ChatListScreen() {
     return (
       <View style={styles.center}>
         <Text testID="empty-chat-list" style={styles.emptyText}>
-          확정된 매칭이 없습니다
+          {t('chat.noChats')}
         </Text>
       </View>
     );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useCreateReview } from '../hooks/useReview';
 import type { ApiError } from '../types/api';
 
@@ -10,6 +11,7 @@ interface ReviewFormProps {
 }
 
 export default function ReviewForm({ requestId, onSubmit }: ReviewFormProps) {
+  const { t } = useTranslation();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const createReview = useCreateReview();
@@ -28,7 +30,7 @@ export default function ReviewForm({ requestId, onSubmit }: ReviewFormProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>별점</Text>
+      <Text style={styles.label}>{t('review.rating')}</Text>
       <View style={styles.starRow}>
         {[1, 2, 3, 4, 5].map((i) => (
           <TouchableOpacity key={i} testID={`star-${i}`} onPress={() => setRating(i)}>
@@ -37,13 +39,13 @@ export default function ReviewForm({ requestId, onSubmit }: ReviewFormProps) {
         ))}
       </View>
 
-      <Text style={styles.label}>코멘트 (선택)</Text>
+      <Text style={styles.label}>{t('review.comment')}</Text>
       <TextInput
         testID="comment-input"
         style={[styles.input, styles.inputMultiline]}
         value={comment}
         onChangeText={setComment}
-        placeholder="서비스는 어떠셨나요?"
+        placeholder={t('review.commentPlaceholder')}
         placeholderTextColor="#525252"
         multiline
         numberOfLines={3}
@@ -56,13 +58,13 @@ export default function ReviewForm({ requestId, onSubmit }: ReviewFormProps) {
         disabled={!isValid || createReview.isPending}
       >
         <Text style={styles.submitText}>
-          {createReview.isPending ? '제출 중...' : '리뷰 제출'}
+          {createReview.isPending ? t('review.submitting') : t('review.submit')}
         </Text>
       </TouchableOpacity>
 
       {createReview.isError && (
         <Text testID="review-error-message" style={styles.errorText}>
-          {(createReview.error as ApiError | null)?.message ?? '리뷰 제출에 실패했습니다.'}
+          {(createReview.error as ApiError | null)?.message ?? t('review.submitError')}
         </Text>
       )}
     </View>

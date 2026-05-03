@@ -1,0 +1,3 @@
+ALTER TABLE users
+  ADD COLUMN base_lat DOUBLE NULL,
+  ADD COLUMN base_lng DOUBLE NULL;

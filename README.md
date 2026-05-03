@@ -57,7 +57,7 @@
 
 | 영역       | 선택                                                                     |
 | ---------- | ------------------------------------------------------------------------ |
-| 프레임워크 | React Native 0.76 (New Architecture) + Expo SDK 52                       |
+| 프레임워크 | React Native 0.81 (New Architecture) + Expo SDK 54                       |
 | 언어       | TypeScript (strict)                                                      |
 | 스타일     | NativeWind v4 (Tailwind CSS 문법)                                        |
 | 서버 상태  | TanStack Query v5                                                        |
@@ -65,7 +65,7 @@
 | 지도       | `react-native-maps` + OpenStreetMap (API 키 불필요)                      |
 | GPS        | `expo-location`                                                          |
 | 인증       | `expo-secure-store` (iOS Keychain / Android Keystore) + 백엔드 직접 호출 |
-| 내비게이션 | React Navigation v6 (Stack + Bottom Tab)                                 |
+| 내비게이션 | React Navigation v7 (Stack + Bottom Tab)                                 |
 | 테스트     | Jest + React Native Testing Library                                      |
 
 ### Web (`web/`) — 0-mvp 참조 구현
@@ -151,10 +151,12 @@ cd backend && ./gradlew check          # 컴파일 + 테스트
 cd backend && ./gradlew bootRun        # http://localhost:8080
 
 # 3. 모바일 앱 (새 터미널)
+# mobile/.env.local 생성:
+# EXPO_PUBLIC_API_BASE_URL=http://localhost:8080
 cd mobile && npm install
 cd mobile && npx expo start            # Metro 서버 → Expo Go 앱 또는 시뮬레이터로 접속
 # iOS 시뮬레이터: cd mobile && npx expo run:ios
-# Android 에뮬레이터: cd mobile && npx expo run:android
+# Android 네이티브 빌드는 예정 — 개발은 Expo Go / iOS 시뮬레이터 권장
 
 # 4. 웹 참조 구현 (선택)
 cd web && npm install
@@ -164,6 +166,8 @@ cd web && npm run dev                  # http://localhost:3000
 # 정리
 docker compose down -v
 ```
+
+모바일 채팅이 느리거나 끊기는 것처럼 보일 때는 `Chat` 탭 헤더의 연결 상태(`connected`/`disconnected`)와 Metro 로그의 `[LocalNow STOMP]` 메시지부터 확인한다.
 
 ## 시연 시나리오 (포트폴리오용)
 

@@ -1,0 +1,48 @@
+{
+  "project": "LocalNow",
+  "phase": "9-request-enhancements",
+  "steps": [
+    {
+      "step": 0,
+      "name": "backend-filter-sort",
+      "status": "completed",
+      "started_at": "2026-05-01T22:05:14+0900",
+      "summary": "GET /requests/open에 requestType 필터, sortBy, lat/lng/radiusKm 파라미터 추가. 위치 있으면 SPATIAL 검색, 없으면 커서 페이지네이션 유지",
+      "completed_at": "2026-05-01T22:09:47+0900"
+    },
+    {
+      "step": 1,
+      "name": "backend-guide-baseloc",
+      "status": "completed",
+      "started_at": "2026-05-01T22:09:47+0900",
+      "summary": "V13 Flyway(users.base_lat/base_lng), GuideProfileService, PUT/GET /guide/me/base-location 엔드포인트 추가",
+      "completed_at": "2026-05-01T22:12:57+0900"
+    },
+    {
+      "step": 2,
+      "name": "mobile-filter-sort",
+      "status": "completed",
+      "started_at": "2026-05-02T01:31:11+0900",
+      "summary": "GuideScreen에 requestType 필터 칩, sortBy 정렬 토글 UI 추가. useOpenRequests 옵션 확장",
+      "completed_at": "2026-05-02T01:33:04+0900"
+    },
+    {
+      "step": 3,
+      "name": "mobile-traveler-location",
+      "status": "completed",
+      "started_at": "2026-05-02T01:33:04+0900",
+      "summary": "RequestForm GPS 자동감지 기본값, Nominatim 주소 검색 바 추가. 기존 지도 탭 동작 유지",
+      "completed_at": "2026-05-02T01:39:35+0900"
+    },
+    {
+      "step": 4,
+      "name": "mobile-guide-baseloc",
+      "status": "completed",
+      "started_at": "2026-05-02T01:39:35+0900",
+      "summary": "ProfileEditScreen 활동 거점 설정 UI(BaseLocationModal + Nominatim 검색), useGuideBaseLocation/useSaveGuideBaseLocation 훅 추가. GuideScreen 거점→GPS→없음 우선순위로 주변 요청 검색 연결",
+      "completed_at": "2026-05-02T01:48:33+0900"
+    }
+  ],
+  "created_at": "2026-05-01T22:05:14+0900",
+  "completed_at": "2026-05-02T01:48:33+0900"
+}

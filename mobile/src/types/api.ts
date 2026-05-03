@@ -254,3 +254,9 @@ export interface ChatRoomSummaryResponse {
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
 }
+
+// Guide base location (PUT/GET /guide/me/base-location)
+export interface BaseLocationResponse {
+  lat: number;
+  lng: number;
+}

@@ -66,7 +66,7 @@ localNow/
 │       │   ├── StatusBadge.tsx
 │       │   ├── OnDutyToggle.tsx    # 가이드 온듀티 토글 버튼
 │       │   ├── ReviewForm.tsx      # 별점·코멘트 입력 폼
-│       │   └── LocationMap.tsx     # react-native-maps 래퍼
+│       │   └── LocationMap.tsx     # @maplibre/maplibre-react-native 래퍼 (CARTO Dark Matter 스타일, UserLocation 내장)
 │       ├── lib/
 │       │   ├── api-client.ts       # fetch 래퍼 (SecureStore에서 JWT 로드, 직접 백엔드 호출)
 │       │   ├── stomp-client.ts     # @stomp/stompjs Native WebSocket 클라이언트

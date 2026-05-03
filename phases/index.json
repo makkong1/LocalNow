@@ -30,6 +30,22 @@
       "dir": "7-payment-capture-guard",
       "status": "completed",
       "completed_at": "2026-05-01T10:24:14+0900"
+    },
+    {
+      "dir": "8-map-spatial-upgrade",
+      "status": "completed",
+      "completed_at": "2026-05-01T16:30:00+0900"
+    },
+    {
+      "dir": "9-request-enhancements",
+      "status": "completed",
+      "failed_at": "2026-05-01T22:13:07+0900",
+      "completed_at": "2026-05-02T01:48:33+0900"
+    },
+    {
+      "dir": "10-i18n",
+      "status": "completed",
+      "completed_at": "2026-05-03T12:00:00+0900"
     }
   ]
 }

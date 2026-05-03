@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useMyRequests, useCreateRequest } from '../hooks/useRequests';
 import { useOffers, useConfirmGuide } from '../hooks/useMatches';
@@ -41,6 +42,7 @@ function getActiveRequest(items: HelpRequestResponse[]): HelpRequestResponse | n
 }
 
 function TravelerRequestCard({ request }: { request: HelpRequestResponse }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.card}>
       <View style={styles.cardRow}>
@@ -49,13 +51,12 @@ function TravelerRequestCard({ request }: { request: HelpRequestResponse }) {
       </View>
       <Text style={styles.cardDesc}>{request.description}</Text>
       <Text style={styles.cardMeta}>
-        예산 {request.budgetKrw.toLocaleString()}원 · {request.durationMin}분
+        {t('traveler.budgetLabel')} {request.budgetKrw.toLocaleString()}{t('common.won')} · {request.durationMin}{t('common.min')}
       </Text>
     </View>
   );
 }
 
-// 오퍼 카드 래퍼 — 공개 프로필 조회 후 자격증 여부 전달 (로딩 중엔 false)
 function OfferCardItem({
   offer,
   onConfirm,
@@ -80,24 +81,24 @@ function OfferCardItem({
   );
 }
 
-// Sub-component: OPEN 상태 (오퍼 목록)
 function OpenView({ request }: { request: HelpRequestResponse }) {
+  const { t } = useTranslation();
   const { data: offers } = useOffers(request.id);
   const confirmGuide = useConfirmGuide();
   const pendingOffers = offers?.filter((o) => o.status === 'PENDING') ?? [];
 
   function handleConfirm(guideId: number, guideName: string) {
     Alert.alert(
-      '가이드를 선택하시겠습니까?',
-      `${guideName} 가이드로 매칭을 확정합니다.`,
+      t('traveler.confirmGuideTitle'),
+      `${guideName} ${t('traveler.confirmGuideMsg')}`,
       [
-        { text: '아니오', style: 'cancel' },
+        { text: t('traveler.confirmNo'), style: 'cancel' },
         {
-          text: '예, 확정합니다',
+          text: t('traveler.confirmYes'),
           onPress: () =>
             confirmGuide.mutate(
               { requestId: request.id, guideId },
-              { onSuccess: () => Alert.alert('확정 완료', '가이드가 확정되었습니다.') },
+              { onSuccess: () => Alert.alert(t('traveler.confirmedTitle'), t('traveler.confirmedMsg')) },
             ),
         },
       ],
@@ -109,7 +110,7 @@ function OpenView({ request }: { request: HelpRequestResponse }) {
       <TravelerRequestCard request={request} />
       {pendingOffers.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>가이드 오퍼를 기다리는 중...</Text>
+          <Text style={styles.emptyText}>{t('traveler.waitingOffers')}</Text>
         </View>
       ) : (
         pendingOffers.map((offer) => (
@@ -125,26 +126,29 @@ function OpenView({ request }: { request: HelpRequestResponse }) {
   );
 }
 
-function paymentCta(intent: PaymentIntentResponse | null | undefined) {
+function paymentCta(
+  intent: PaymentIntentResponse | null | undefined,
+  t: (key: string) => string,
+) {
   if (intent == null) {
-    return { label: '결제하기', disabled: false };
+    return { label: t('payment.cta'), disabled: false };
   }
   switch (intent.status) {
     case 'CAPTURED':
-      return { label: '결제 완료 ✓', disabled: true };
+      return { label: t('payment.paid'), disabled: true };
     case 'AUTHORIZED':
-      return { label: '결제 대기중', disabled: false };
+      return { label: t('payment.authorized'), disabled: false };
     case 'REFUNDED':
-      return { label: '환불됨', disabled: true };
+      return { label: t('payment.refunded'), disabled: true };
     case 'FAILED':
-      return { label: '결제 실패 — 다시 시도', disabled: false };
+      return { label: t('payment.failed'), disabled: false };
     default:
-      return { label: '결제하기', disabled: false };
+      return { label: t('payment.cta'), disabled: false };
   }
 }
 
-// Sub-component: MATCHED / IN_PROGRESS 상태 (채팅 + 결제)
 function MatchedView({ request }: { request: HelpRequestResponse }) {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { data: room } = useChatRoom(request.id);
   const { data: offers } = useOffers(request.id);
@@ -153,7 +157,7 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
   const guideId =
     room?.guideId ?? offers?.find((o) => o.status === 'CONFIRMED')?.guideId ?? undefined;
 
-  const pay = paymentCta(intent);
+  const pay = paymentCta(intent, t);
 
   function goToChat() {
     if (room) {
@@ -176,10 +180,10 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
           onPress={() => navigation.navigate('GuideProfile', { userId: guideId })}
           style={styles.profileLinkRow}
         >
-          <Text style={styles.profileLinkText}>가이드 프로필 보기 →</Text>
+          <Text style={styles.profileLinkText}>{t('traveler.viewGuideProfile')}</Text>
         </TouchableOpacity>
       )}
-      <Text style={styles.sectionLabel}>다음 단계</Text>
+      <Text style={styles.sectionLabel}>{t('guide.nextStep')}</Text>
       <TouchableOpacity
         testID="go-to-chat-button"
         style={styles.secondaryButton}
@@ -187,7 +191,7 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
         disabled={!room}
       >
         <Text style={styles.secondaryButtonText}>
-          {room ? '채팅하기' : '채팅방 생성 중...'}
+          {room ? t('traveler.goToChat') : t('traveler.creatingChatRoom')}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -197,15 +201,15 @@ function MatchedView({ request }: { request: HelpRequestResponse }) {
         disabled={pay.disabled || guideId == null}
       >
         <Text style={styles.primaryButtonText}>
-          {guideId == null ? '가이드 정보를 불러오는 중...' : pay.label}
+          {guideId == null ? t('traveler.loadingGuideInfo') : pay.label}
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-// COMPLETED: 리뷰 (guideId — 채팅방 또는 확정 오퍼)
 function CompletedView({ request }: { request: HelpRequestResponse }) {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { data: room } = useChatRoom(request.id);
   const { data: offers } = useOffers(request.id);
@@ -215,7 +219,7 @@ function CompletedView({ request }: { request: HelpRequestResponse }) {
   return (
     <ScrollView style={styles.scrollContainer}>
       <TravelerRequestCard request={request} />
-      <Text style={styles.sectionLabel}>서비스가 완료되었습니다</Text>
+      <Text style={styles.sectionLabel}>{t('traveler.serviceCompleted')}</Text>
       <TouchableOpacity
         testID="go-to-review-button"
         style={[styles.primaryButton, guideId == null && styles.primaryButtonDisabled]}
@@ -226,13 +230,14 @@ function CompletedView({ request }: { request: HelpRequestResponse }) {
         }}
         disabled={guideId == null}
       >
-        <Text style={styles.primaryButtonText}>리뷰 작성하기</Text>
+        <Text style={styles.primaryButtonText}>{t('traveler.writeReview')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 export default function TravelerScreen() {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
@@ -243,10 +248,7 @@ export default function TravelerScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (cancelled) return;
       if (status !== 'granted') {
-        Alert.alert(
-          '위치 권한',
-          '현재 위치를 쓸 수 없습니다. 지도에서 탭하여 요청 위치를 선택할 수 있습니다.',
-        );
+        Alert.alert(t('traveler.locationPermTitle'), t('traveler.locationPermMsg'));
         setLat(FALLBACK_LAT);
         setLng(FALLBACK_LNG);
         return;
@@ -262,7 +264,7 @@ export default function TravelerScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const { data: requestsPage, isLoading } = useMyRequests();
   const createRequest = useCreateRequest();
@@ -282,7 +284,6 @@ export default function TravelerScreen() {
     );
   }
 
-  // 활성 요청 없음 → 지도 + 요청 생성
   if (!activeRequest) {
     if (lat == null || lng == null) {
       return (
@@ -309,15 +310,15 @@ export default function TravelerScreen() {
             style={styles.primaryButton}
             onPress={() => setShowForm(true)}
           >
-            <Text style={styles.primaryButtonText}>도움 요청하기</Text>
+            <Text style={styles.primaryButtonText}>{t('traveler.createRequest')}</Text>
           </TouchableOpacity>
         </View>
         <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>도움 요청 생성</Text>
+              <Text style={styles.modalTitle}>{t('traveler.createRequestTitle')}</Text>
               <TouchableOpacity testID="close-form-button" onPress={() => setShowForm(false)}>
-                <Text style={styles.closeText}>닫기</Text>
+                <Text style={styles.closeText}>{t('common.close')}</Text>
               </TouchableOpacity>
             </View>
             <RequestForm
@@ -332,32 +333,28 @@ export default function TravelerScreen() {
     );
   }
 
-  // OPEN → 오퍼 목록
   if (activeRequest.status === 'OPEN') {
     return <OpenView request={activeRequest} />;
   }
 
-  // MATCHED / IN_PROGRESS → 채팅 + 결제 이동
   if (activeRequest.status === 'MATCHED' || activeRequest.status === 'IN_PROGRESS') {
     return <MatchedView request={activeRequest} />;
   }
 
-  // COMPLETED → 리뷰
   if (activeRequest.status === 'COMPLETED') {
     return <CompletedView request={activeRequest} />;
   }
 
-  // CANCELLED 또는 기타
   return (
     <View style={styles.container}>
       <View style={styles.center}>
-        <Text style={styles.emptyText}>취소된 요청입니다.</Text>
+        <Text style={styles.emptyText}>{t('traveler.cancelled')}</Text>
         <TouchableOpacity
           testID="new-request-button"
           style={[styles.primaryButton, { marginTop: 16 }]}
           onPress={() => setShowForm(true)}
         >
-          <Text style={styles.primaryButtonText}>새 요청하기</Text>
+          <Text style={styles.primaryButtonText}>{t('traveler.newRequest')}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -19,6 +19,7 @@ import com.localnow.common.ErrorCode;
 import static com.localnow.common.security.AuthenticationUserRoles.isGuide;
 import static com.localnow.common.security.AuthenticationUserRoles.isTraveler;
 import static com.localnow.common.security.AuthenticationUserRoles.resolveUserRole;
+import com.localnow.request.domain.RequestType;
 import com.localnow.request.dto.CreateRequestRequest;
 import com.localnow.request.dto.HelpRequestPageResponse;
 import com.localnow.request.dto.HelpRequestResponse;
@@ -54,12 +55,17 @@ public class RequestController {
     public ResponseEntity<ApiResponse<HelpRequestPageResponse>> getOpenRequests(
             @RequestParam(name = "cursor", required = false) @Nullable Long cursor,
             @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "requestType", required = false) @Nullable RequestType requestType,
+            @RequestParam(name = "sortBy", required = false) @Nullable String sortBy,
+            @RequestParam(name = "lat", required = false) @Nullable Double lat,
+            @RequestParam(name = "lng", required = false) @Nullable Double lng,
+            @RequestParam(name = "radiusKm", defaultValue = "5.0") double radiusKm,
             Authentication authentication) {
         if (!isGuide(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.fail(ErrorCode.AUTH_FORBIDDEN, ErrorCode.AUTH_FORBIDDEN.getDefaultMessage()));
         }
-        HelpRequestPageResponse response = requestService.getOpenRequests(cursor, size);
+        HelpRequestPageResponse response = requestService.getOpenRequests(cursor, size, requestType, sortBy, lat, lng, radiusKm);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 

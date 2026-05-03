@@ -3,6 +3,7 @@ package com.localnow.request.service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -22,9 +23,12 @@ public class MatchDispatcher {
     private final RedisGeoService redisGeoService;
     private final RabbitPublisher rabbitPublisher;
 
+    @Value("${localnow.match.search-radius-km:5.0}")
+    private double searchRadiusKm;
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMatchDispatch(MatchDispatchEvent event) {
-        List<Long> guideIds = redisGeoService.searchNearby(event.lat(), event.lng(), 5.0);
+        List<Long> guideIds = redisGeoService.searchNearby(event.lat(), event.lng(), searchRadiusKm);
         if (guideIds.isEmpty()) {
             return;
         }

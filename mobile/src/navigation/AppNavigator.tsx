@@ -6,6 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import TravelerScreen from '../screens/TravelerScreen';
 import GuideScreen from '../screens/GuideScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -38,6 +39,7 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 const Stack = createStackNavigator<AppStackParamList>();
 
 function MainTabs() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   /** 첫 화면: 여행자는 여행 탭, 가이드는 가이드 탭 (ADMIN 등은 여행 탭 기본) */
   const initialRouteName: keyof AppTabParamList =
@@ -56,26 +58,27 @@ function MainTabs() {
       <Tab.Screen
         name="Traveler"
         component={TravelerScreen}
-        options={{ tabBarLabel: '여행자' }}
+        options={{ tabBarLabel: t('nav.traveler') }}
       />
-      <Tab.Screen name="Guide" component={GuideScreen} options={{ tabBarLabel: '가이드' }} />
+      <Tab.Screen name="Guide" component={GuideScreen} options={{ tabBarLabel: t('nav.guide') }} />
       <Tab.Screen
         name="Chat"
         component={ChatListScreen}
-        options={{ tabBarLabel: '채팅' }}
+        options={{ tabBarLabel: t('nav.chat') }}
       />
     </Tab.Navigator>
   );
 }
 
 function AppHeader({ isConnected }: { isConnected: boolean }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { userId, role, logout } = useAuth();
   const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   return (
     <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 10 }]}>
       <View style={styles.headerLeft}>
-        <Text style={styles.logo}>LocalNow</Text>
+        <Text style={styles.logo}>{t('nav.appName')}</Text>
         <View
           style={[styles.connDot, { backgroundColor: isConnected ? '#22c55e' : '#525252' }]}
         />
@@ -87,7 +90,7 @@ function AppHeader({ isConnected }: { isConnected: boolean }) {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={logout} testID="logout-button">
-          <Text style={styles.logout}>로그아웃</Text>
+          <Text style={styles.logout}>{t('nav.logout')}</Text>
         </TouchableOpacity>
       </View>
     </View>

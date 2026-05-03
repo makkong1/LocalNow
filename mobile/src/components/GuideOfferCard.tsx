@@ -1,6 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { MatchOfferResponse } from '../types/api';
+
+function offerTimeLocale(lang: string): string {
+  const b = lang.split('-')[0];
+  if (b === 'ko') return 'ko-KR';
+  if (b === 'ja') return 'ja-JP';
+  if (b === 'zh') return 'zh-CN';
+  return 'en-US';
+}
 
 interface GuideOfferCardProps {
   offer: MatchOfferResponse;
@@ -31,6 +40,9 @@ export default function GuideOfferCard({
   onPressProfile,
   isConfirming,
 }: GuideOfferCardProps) {
+  const { t, i18n } = useTranslation();
+  const locale = offerTimeLocale(i18n.language);
+
   return (
     <View style={styles.card}>
       <TouchableOpacity style={styles.cardHeader} onPress={onPressProfile} activeOpacity={0.7}>
@@ -38,22 +50,22 @@ export default function GuideOfferCard({
           <Text style={styles.guideName}>{offer.guideName}</Text>
           {hasCertification && (
             <View style={styles.certBadge}>
-              <Text style={styles.certBadgeText}>인증됨</Text>
+              <Text style={styles.certBadgeText}>{t('offer.verified')}</Text>
             </View>
           )}
         </View>
         <View style={styles.headerRight}>
           <StarRating rating={offer.guideAvgRating} />
-          <Text style={styles.profileLink}>상세 보기 →</Text>
+          <Text style={styles.profileLink}>{t('offer.viewProfile')}</Text>
         </View>
       </TouchableOpacity>
       {offer.message ? <Text style={styles.message}>{offer.message}</Text> : null}
       <Text style={styles.meta}>
-        {new Date(offer.createdAt).toLocaleTimeString('ko-KR', {
+        {new Date(offer.createdAt).toLocaleTimeString(locale, {
           hour: '2-digit',
           minute: '2-digit',
         })}{' '}
-        수락
+        {t('guide.accepted')}
       </Text>
       <TouchableOpacity
         testID="confirm-button"
@@ -61,7 +73,9 @@ export default function GuideOfferCard({
         onPress={() => onConfirm(offer.guideId)}
         disabled={isConfirming}
       >
-        <Text style={styles.confirmText}>{isConfirming ? '처리 중...' : '이 가이드로 확정'}</Text>
+        <Text style={styles.confirmText}>
+          {isConfirming ? t('common.processing') : t('offer.confirm')}
+        </Text>
       </TouchableOpacity>
     </View>
   );

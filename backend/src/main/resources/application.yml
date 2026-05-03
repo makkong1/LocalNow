@@ -95,6 +95,8 @@ logging:
 localnow:
   upload:
     dir: ${UPLOAD_DIR:./uploads}
+  match:
+    search-radius-km: ${MATCH_SEARCH_RADIUS_KM:5.0}
 
 management:
   endpoints:

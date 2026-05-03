@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Switch, Alert, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 
 interface OnDutyToggleProps {
   isOnDuty: boolean;
@@ -9,6 +10,8 @@ interface OnDutyToggleProps {
 }
 
 export default function OnDutyToggle({ isOnDuty, onToggle, isLoading }: OnDutyToggleProps) {
+  const { t } = useTranslation();
+
   async function handleToggle() {
     if (isOnDuty) {
       onToggle(false);
@@ -18,7 +21,7 @@ export default function OnDutyToggle({ isOnDuty, onToggle, isLoading }: OnDutyTo
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('위치 권한 필요', '근무 시작에는 위치 권한이 필요합니다');
+        Alert.alert(t('guide.locationPermTitle'), t('guide.locationPermMsg'));
         return;
       }
 
@@ -27,7 +30,7 @@ export default function OnDutyToggle({ isOnDuty, onToggle, isLoading }: OnDutyTo
       });
       onToggle(true, { lat: pos.coords.latitude, lng: pos.coords.longitude });
     } catch {
-      Alert.alert('위치 오류', '현재 위치를 가져오지 못했습니다. 시뮬레이터는 기능 › 위치에서 좌표를 설정해 보세요.');
+      Alert.alert(t('guide.locationErrorTitle'), t('guide.locationErrorMsg'));
     }
   }
 
@@ -35,9 +38,9 @@ export default function OnDutyToggle({ isOnDuty, onToggle, isLoading }: OnDutyTo
     <View style={styles.container}>
       <View style={styles.row}>
         <View>
-          <Text style={styles.label}>{isOnDuty ? '근무 중' : '오프라인'}</Text>
+          <Text style={styles.label}>{isOnDuty ? t('guide.onDutyLabel') : t('guide.offDutyLabel')}</Text>
           <Text style={styles.sub}>
-            {isOnDuty ? '주변 요청을 수신 중입니다' : '켜면 위치를 등록하고 주변 요청을 받습니다'}
+            {isOnDuty ? t('guide.onDutyHint') : t('guide.offDutyHint')}
           </Text>
         </View>
         <Switch

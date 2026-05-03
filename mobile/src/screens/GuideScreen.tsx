@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,18 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
+import * as Location from "expo-location";
 import { useOpenRequests } from "../hooks/useRequests";
 import { useAcceptRequest, useStartService } from "../hooks/useMatches";
 import { useChatRoom } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
-import { useSetDuty, useGuideActiveOffer } from "../hooks/useGuide";
+import { useSetDuty, useGuideActiveOffer, useGuideBaseLocation } from "../hooks/useGuide";
 import OnDutyToggle from "../components/OnDutyToggle";
 import RequestCard from "../components/RequestCard";
 import StatusBadge from "../components/StatusBadge";
-import type { GuideActiveOfferResponse } from "../types/api";
+import type { GuideActiveOfferResponse, RequestType } from "../types/api";
 import type { AppStackParamList } from "../navigation/AppNavigator";
 
 function OnDutyOffView({
@@ -38,6 +40,14 @@ function OnDutyOffView({
   );
 }
 
+type SortOption = 'budgetAsc' | 'budgetDesc' | null;
+
+function nextSort(current: SortOption): SortOption {
+  if (current === null) return 'budgetAsc';
+  if (current === 'budgetAsc') return 'budgetDesc';
+  return null;
+}
+
 function OpenRequestsView({
   onToggle,
   isTogglerLoading,
@@ -45,11 +55,50 @@ function OpenRequestsView({
   onToggle: (onDuty: boolean, location?: { lat: number; lng: number }) => void;
   isTogglerLoading: boolean;
 }) {
+  const { t } = useTranslation();
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<RequestType | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>(null);
+  const [gpsLoc, setGpsLoc] = useState<{ lat: number; lng: number } | null>(null);
   const acceptRequest = useAcceptRequest();
+  const { data: baseLoc } = useGuideBaseLocation();
+
+  const FILTER_CHIPS: { label: string; value: RequestType | null }[] = [
+    { label: t('guide.filterAll'), value: null },
+    { label: t('requestType.GUIDE'), value: 'GUIDE' },
+    { label: t('requestType.TRANSLATION'), value: 'TRANSLATION' },
+    { label: t('requestType.FOOD'), value: 'FOOD' },
+    { label: t('requestType.EMERGENCY'), value: 'EMERGENCY' },
+  ];
+
+  function sortLabel(s: SortOption): string {
+    if (s === 'budgetAsc') return t('guide.sortPriceAsc');
+    if (s === 'budgetDesc') return t('guide.sortPriceDesc');
+    return t('guide.sortDefault');
+  }
+
+  useEffect(() => {
+    if (baseLoc) return;
+    Location.requestForegroundPermissionsAsync().then(({ status }) => {
+      if (status !== "granted") return;
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      }).then((pos) => {
+        setGpsLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      });
+    });
+  }, [baseLoc]);
+
+  const searchLoc = baseLoc ?? gpsLoc ?? null;
+
   const { data: requestsPage, isLoading } = useOpenRequests({
     enabled: true,
     refetchInterval: 10000,
+    requestType: selectedType,
+    sortBy,
+    lat: searchLoc?.lat,
+    lng: searchLoc?.lng,
+    radiusKm: 5.0,
   });
   const openRequests = requestsPage?.items ?? [];
 
@@ -59,7 +108,7 @@ function OpenRequestsView({
       { requestId },
       {
         onSuccess: () => {
-          Alert.alert("수락 완료", "여행자가 확정하면 알림이 옵니다.");
+          Alert.alert(t('guide.acceptConfirmTitle'), t('guide.acceptConfirmMsg'));
           setAcceptingId(null);
         },
         onError: () => setAcceptingId(null),
@@ -74,12 +123,43 @@ function OpenRequestsView({
         onToggle={onToggle}
         isLoading={isTogglerLoading}
       />
-      <Text style={styles.sectionLabel}>주변 도움 요청</Text>
+      <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipList}
+          style={styles.chipScroll}
+        >
+          {FILTER_CHIPS.map((chip) => {
+            const active = selectedType === chip.value;
+            return (
+              <TouchableOpacity
+                key={chip.label}
+                testID={`filter-chip-${chip.label}`}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => setSelectedType(chip.value)}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        <TouchableOpacity
+          testID="sort-toggle"
+          style={styles.sortButton}
+          onPress={() => setSortBy(nextSort(sortBy))}
+        >
+          <Text style={styles.sortButtonText}>{sortLabel(sortBy)}</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.sectionLabel}>{t('guide.nearbyRequests')}</Text>
       {isLoading ? (
         <ActivityIndicator color="#f59e0b" style={styles.loader} />
       ) : openRequests.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>주변에 요청이 없습니다</Text>
+          <Text style={styles.emptyText}>{t('guide.noRequests')}</Text>
         </View>
       ) : (
         openRequests.map((req) => (
@@ -97,6 +177,7 @@ function OpenRequestsView({
 }
 
 function AcceptedView({ offer }: { offer: GuideActiveOfferResponse }) {
+  const { t } = useTranslation();
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.card}>
@@ -106,12 +187,12 @@ function AcceptedView({ offer }: { offer: GuideActiveOfferResponse }) {
         </View>
         <Text style={styles.cardDesc}>{offer.description}</Text>
         <Text style={styles.cardMeta}>
-          {offer.budgetKrw.toLocaleString()}원 · {offer.durationMin}분
+          {offer.budgetKrw.toLocaleString()}{t('common.won')} · {offer.durationMin}{t('common.min')}
         </Text>
       </View>
       <View style={styles.hintBox}>
         <Text style={styles.hintText}>
-          수락 완료. 여행자가 확정하면 알림이 옵니다.
+          {t('guide.acceptDone')}. {t('guide.acceptConfirmMsg')}
         </Text>
       </View>
     </ScrollView>
@@ -119,6 +200,7 @@ function AcceptedView({ offer }: { offer: GuideActiveOfferResponse }) {
 }
 
 function MatchedView({ offer }: { offer: GuideActiveOfferResponse }) {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { data: room } = useChatRoom(offer.requestId);
   const startService = useStartService();
@@ -140,10 +222,10 @@ function MatchedView({ offer }: { offer: GuideActiveOfferResponse }) {
         </View>
         <Text style={styles.cardDesc}>{offer.description}</Text>
         <Text style={styles.cardMeta}>
-          {offer.budgetKrw.toLocaleString()}원 · {offer.durationMin}분
+          {offer.budgetKrw.toLocaleString()}{t('common.won')} · {offer.durationMin}{t('common.min')}
         </Text>
       </View>
-      <Text style={styles.sectionLabel}>다음 단계</Text>
+      <Text style={styles.sectionLabel}>{t('guide.nextStep')}</Text>
       <TouchableOpacity
         testID="guide-go-to-chat-button"
         style={styles.secondaryButton}
@@ -151,7 +233,7 @@ function MatchedView({ offer }: { offer: GuideActiveOfferResponse }) {
         disabled={!room}
       >
         <Text style={styles.secondaryButtonText}>
-          {room ? "채팅하기" : "채팅방 생성 중..."}
+          {room ? t('guide.goToChat') : t('guide.creatingChatRoom')}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -164,7 +246,7 @@ function MatchedView({ offer }: { offer: GuideActiveOfferResponse }) {
         disabled={startService.isPending}
       >
         <Text style={styles.primaryButtonText}>
-          {startService.isPending ? "처리 중..." : "서비스 시작"}
+          {startService.isPending ? t('common.processing') : t('guide.startService')}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -172,6 +254,7 @@ function MatchedView({ offer }: { offer: GuideActiveOfferResponse }) {
 }
 
 function InProgressView({ offer }: { offer: GuideActiveOfferResponse }) {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const { data: room } = useChatRoom(offer.requestId);
 
@@ -192,7 +275,7 @@ function InProgressView({ offer }: { offer: GuideActiveOfferResponse }) {
         </View>
         <Text style={styles.cardDesc}>{offer.description}</Text>
         <Text style={styles.cardMeta}>
-          {offer.budgetKrw.toLocaleString()}원 · {offer.durationMin}분
+          {offer.budgetKrw.toLocaleString()}{t('common.won')} · {offer.durationMin}{t('common.min')}
         </Text>
       </View>
       <TouchableOpacity
@@ -202,7 +285,7 @@ function InProgressView({ offer }: { offer: GuideActiveOfferResponse }) {
         disabled={!room}
       >
         <Text style={styles.primaryButtonText}>
-          {room ? "채팅하기" : "채팅방 생성 중..."}
+          {room ? t('guide.goToChat') : t('guide.creatingChatRoom')}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -210,20 +293,17 @@ function InProgressView({ offer }: { offer: GuideActiveOfferResponse }) {
 }
 
 function GuideRoleRequiredView() {
+  const { t } = useTranslation();
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.roleTitle}>가이드 전용</Text>
-      <Text style={styles.roleBody}>
-        근무 시작·주변 요청 보기는{" "}
-        <Text style={styles.roleEm}>가이드(GUIDE) 역할</Text> 계정에서만 사용할
-        수 있습니다. 소셜/기본 가입은 보통 여행자입니다. 가이드로 쓰려면
-        회원가입 시 역할을 가이드로 선택한 계정으로 로그인해 주세요.
-      </Text>
+      <Text style={styles.roleTitle}>{t('guide.roleRequiredTitle')}</Text>
+      <Text style={styles.roleBody}>{t('guide.roleRequiredBody')}</Text>
     </ScrollView>
   );
 }
 
 export default function GuideScreen() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const [isOnDuty, setIsOnDuty] = useState(false);
   const setDuty = useSetDuty();
@@ -249,16 +329,16 @@ export default function GuideScreen() {
         "message" in e &&
         typeof (e as { message: unknown }).message === "string"
           ? (e as { message: string }).message
-          : "근무 상태를 바꾸지 못했습니다.";
+          : t('guide.dutyToggleError');
       const code =
         e && typeof e === "object" && "code" in e
           ? String((e as { code: unknown }).code)
           : "";
       const hint =
         code === "AUTH_FORBIDDEN"
-          ? "이 계정은 가이드가 아닙니다. 가이드로 가입·로그인했는지 확인해 주세요."
+          ? t('guide.notGuideHint')
           : msg;
-      Alert.alert("근무 상태", hint);
+      Alert.alert(t('guide.dutyAlertTitle'), hint);
     }
   }
 
@@ -332,6 +412,52 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 12,
   },
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  chipScroll: {
+    flex: 1,
+  },
+  chipList: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  chipActive: {
+    backgroundColor: "#f59e0b",
+    borderColor: "#f59e0b",
+  },
+  chipText: {
+    color: "#a3a3a3",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  chipTextActive: {
+    color: "#000",
+  },
+  sortButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    marginLeft: 8,
+  },
+  sortButtonText: {
+    color: "#a3a3a3",
+    fontSize: 13,
+    fontWeight: "500",
+  },
   loader: { marginVertical: 24 },
   emptyBox: {
     padding: 32,
@@ -393,5 +519,4 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   roleBody: { color: "#a3a3a3", fontSize: 14, lineHeight: 22 },
-  roleEm: { color: "#e5e5e5", fontWeight: "600" },
 });

@@ -53,7 +53,8 @@ public class HttpAccessLogFilter extends OncePerRequestFilter implements Ordered
             filterChain.doFilter(request, response);
         } finally {
             long ms = (System.nanoTime() - t0) / 1_000_000L;
-            log.info("{} {} -> {} ({}ms)", method, path, response.getStatus(), ms);
+            log.info("reason=HTTP_ACCESS ko=HTTP 접근 로그 method={} path={} status={} durationMs={}",
+                    method, path, response.getStatus(), ms);
         }
     }
 }

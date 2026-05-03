@@ -129,7 +129,7 @@ public class MatchService {
         boolean acquired = Boolean.TRUE.equals(
                 redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, confirmLockTtl));
         if (!acquired) {
-            log.warn("Match confirm Redis lock not acquired requestId={} lockKey={} ttl={}",
+            log.warn("reason=MATCH_CONFIRM_LOCK_NOT_ACQUIRED ko=매칭 확정 Redis 락 획득 실패 requestId={} lockKey={} ttl={}",
                     requestId, lockKey, confirmLockTtl);
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     ErrorCode.MATCH_ALREADY_CONFIRMED.getDefaultMessage());

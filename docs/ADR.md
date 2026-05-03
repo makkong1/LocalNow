@@ -89,3 +89,14 @@ MVP 속도 최우선. 외부 의존성은 "정말 매칭/채팅/결제가 동작
 **결정**: Google OAuth2 client-id/secret, JWT secret 등 외부 서비스 키는 `application.yml`에 하드코딩하지 않는다. `application-local.yml`(`.gitignore` 등록)에 저장하고 `spring.config.import: "optional:classpath:application-local.yml"` 로 로드한다. CI/프로덕션에서는 환경변수(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET` 등)로 주입한다.
 **이유**: 크리덴셜이 git 히스토리에 노출되면 rotate 비용이 크다. `application.yml`에는 `${ENV_VAR:}` 플레이스홀더만 남긴다.
 **트레이드오프**: 로컬 최초 셋업 시 `application-local.yml`을 직접 생성해야 한다. `optional:` prefix 를 붙여 파일이 없어도 서버가 뜨게 하되, 해당 기능(Google 로그인)은 동작하지 않는다.
+
+
+### ADR-016: 모바일 지도 라이브러리를 @maplibre/maplibre-react-native로 교체한다
+**결정**: 모바일 앱의 지도 라이브러리를 `react-native-maps` + OpenStreetMap UrlTile 오버레이에서 `@maplibre/maplibre-react-native` v11+ (CARTO Dark Matter 벡터 스타일)로 교체한다. 타일 소스로 CARTO basemaps(`https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json`)를 사용하며 API 키·계정이 불필요하다.
+**이유**: 기존 구현은 네이티브 지도 엔진(iOS: Apple Maps, Android: Google Maps) 위에 OSM 래스터 타일을 덮어씌우는 방식으로, (1) 두 레이어의 스타일 불일치로 시각적 어색함 발생, (2) OSM 타일이 항상 라이트 테마여서 앱 다크 테마와 충돌, (3) `showsUserLocation` 미설정으로 사용자 현재 위치 표시 없음 세 가지 문제가 있었다. MapLibre GL은 Mapbox GL의 오픈소스 포크로, 벡터 타일 기반 다크 스타일·`UserLocation` 내장 지원을 제공하며 계정·토큰 없이 동작한다. React Native 0.76 New Architecture(Fabric)도 공식 지원한다.
+**트레이드오프**: CARTO basemaps는 무료·무제한이지만 상업적 SLA가 없다. Mapbox GL 기반이므로 API가 거의 동일하나 `setAccessToken` 호출이 불필요하다. ADR-008(웹 클라이언트의 Google Maps/Mapbox 금지)은 웹 전용 결정이며 모바일에는 적용되지 않는다.
+
+### ADR-017: help_requests에 MySQL SPATIAL INDEX를 추가한다 (ADR-002 보완)
+**결정**: `help_requests` 테이블에 `location POINT NOT NULL GENERATED ALWAYS AS (ST_SRID(POINT(lng, lat), 4326)) STORED` 컬럼과 `SPATIAL INDEX idx_help_request_location`을 추가한다(V12 Flyway). `HelpRequestRepository.findNearbyOpen`은 MBR pre-filter(`MBRWithin`) + 정밀 필터(`ST_Distance_Sphere`)를 조합해 O(log N) 공간 쿼리를 제공한다.
+**이유**: ADR-002에서 가이드 실시간 위치 검색은 Redis GEO로 처리하기로 결정했으나, help_requests 테이블의 `lat`/`lng` 컬럼에는 인덱스가 없었다. 가이드가 온듀티 전환 시 주변 OPEN 요청 조회, 관리 화면의 지역별 요청 집계 등의 쿼리가 풀 테이블 스캔으로 동작했다. MySQL 8.0 InnoDB의 R-tree SPATIAL INDEX로 이를 O(log N)으로 개선한다. 두 인덱스의 역할은 명확히 분리된다: Redis GEO = 가이드 실시간 위치(TTL 있는 단기 상태), MySQL SPATIAL = help_requests 위치(영속 데이터, 쿼리 최적화).
+**트레이드오프**: `STORED` GENERATED 컬럼은 INSERT/UPDATE 시 추가 연산이 발생하지만, help_requests 생성은 매칭 이벤트 단위(빈도 낮음)라 부담이 없다. MySQL SPATIAL INDEX는 SRID를 엄격하게 다루므로 쿼리와 컬럼의 SRID가 일치해야 한다(둘 다 4326).

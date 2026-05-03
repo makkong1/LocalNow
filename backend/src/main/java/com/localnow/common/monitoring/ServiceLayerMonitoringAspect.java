@@ -43,8 +43,8 @@ public class ServiceLayerMonitoringAspect {
                 if (outer) {
                     long durationMs = (System.nanoTime() - startNs) / 1_000_000L;
                     long deltaBytes = usedHeapBytes() - usedHeapBefore;
-                    log.info("service.monitor op={} durationMs={} heapDeltaBytes={}", operation, durationMs,
-                            deltaBytes);
+                    log.info("reason=SERVICE_MONITOR ko=서비스 계층 성능 모니터링 op={} durationMs={} heapDeltaBytes={}",
+                            operation, durationMs, deltaBytes);
                 }
             } finally {
                 OperationMdcHolder.leave();

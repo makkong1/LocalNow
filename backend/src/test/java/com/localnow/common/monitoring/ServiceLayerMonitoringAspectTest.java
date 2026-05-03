@@ -45,6 +45,6 @@ class ServiceLayerMonitoringAspectTest {
         assertThat(listAppender.list)
                 .isNotEmpty()
                 .anySatisfy(e -> assertThat(e.getFormattedMessage())
-                        .contains("EchoService#run", "op=EchoService#run", "service.monitor"));
+                        .contains("EchoService#run", "op=EchoService#run", "reason=SERVICE_MONITOR"));
     }
 }

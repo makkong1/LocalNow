@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { AuthStackParamList } from '../navigation/AuthNavigator';
@@ -19,6 +20,7 @@ type Nav = StackNavigationProp<AuthStackParamList, 'EmailHint'>;
 
 export default function EmailHintScreen() {
   const navigation = useNavigation<Nav>();
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
@@ -33,15 +35,12 @@ export default function EmailHintScreen() {
     const res = await postEmailHintRequest({ name: name.trim(), city: city.trim() });
     setLoading(false);
     if (!res.success || !res.data) {
-      setError(res.error?.message ?? '요청에 실패했습니다.');
+      setError(res.error?.message ?? t('auth.requestFailed'));
       return;
     }
     setTicketId(res.data.ticketId);
     setStep(2);
-    Alert.alert(
-      '인증번호 발송',
-      '등록된 이메일로 인증번호가 발송되었습니다.\n(개발 환경에서는 서버 콘솔 로그에서 OTP를 확인할 수 있습니다.)',
-    );
+    Alert.alert(t('auth.otpSentTitle'), t('auth.otpSentMsgEmail'));
   }
 
   async function handleVerify() {
@@ -51,11 +50,11 @@ export default function EmailHintScreen() {
     const res = await postEmailHintVerify({ ticketId, code: code.trim() });
     setLoading(false);
     if (!res.success || !res.data) {
-      setError(res.error?.message ?? '인증에 실패했습니다.');
+      setError(res.error?.message ?? t('auth.verifyFailed'));
       return;
     }
-    Alert.alert('가입 이메일', res.data.email, [
-      { text: '확인', onPress: () => navigation.navigate('Login') },
+    Alert.alert(t('auth.emailFoundTitle'), res.data.email, [
+      { text: t('common.confirm'), onPress: () => navigation.navigate('Login') },
     ]);
   }
 
@@ -65,17 +64,14 @@ export default function EmailHintScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>이메일 찾기</Text>
-        <Text style={styles.desc}>
-          아이디는 가입 시 사용한 이메일입니다. 가입 시 입력한 이름과 도시가 일치하면 등록 이메일로 인증번호가
-          발송됩니다.
-        </Text>
+        <Text style={styles.title}>{t('auth.emailHint')}</Text>
+        <Text style={styles.desc}>{t('auth.emailHintDesc')}</Text>
 
         {step === 1 ? (
           <>
             <TextInput
               style={styles.input}
-              placeholder="이름"
+              placeholder={t('auth.name')}
               placeholderTextColor="#525252"
               value={name}
               onChangeText={setName}
@@ -83,7 +79,7 @@ export default function EmailHintScreen() {
             />
             <TextInput
               style={styles.input}
-              placeholder="도시 (가입 시 입력)"
+              placeholder={t('auth.cityAtSignup')}
               placeholderTextColor="#525252"
               value={city}
               onChangeText={setCity}
@@ -92,7 +88,7 @@ export default function EmailHintScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.stepLabel}>인증번호 6자리</Text>
+            <Text style={styles.stepLabel}>{t('auth.otpLabel')}</Text>
             <TextInput
               style={styles.input}
               placeholder="000000"
@@ -116,7 +112,7 @@ export default function EmailHintScreen() {
             {loading ? (
               <ActivityIndicator color="#0a0a0a" />
             ) : (
-              <Text style={styles.buttonText}>인증번호 받기</Text>
+              <Text style={styles.buttonText}>{t('auth.requestOtp')}</Text>
             )}
           </TouchableOpacity>
         ) : (
@@ -128,13 +124,13 @@ export default function EmailHintScreen() {
             {loading ? (
               <ActivityIndicator color="#0a0a0a" />
             ) : (
-              <Text style={styles.buttonText}>확인 후 이메일 표시</Text>
+              <Text style={styles.buttonText}>{t('auth.showEmailButton')}</Text>
             )}
           </TouchableOpacity>
         )}
 
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.link}>로그인으로</Text>
+          <Text style={styles.link}>{t('auth.backToLogin')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
