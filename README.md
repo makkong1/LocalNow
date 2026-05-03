@@ -156,7 +156,7 @@ cd backend && ./gradlew bootRun        # http://localhost:8080
 cd mobile && npm install
 cd mobile && npx expo start            # Metro 서버 → Expo Go 앱 또는 시뮬레이터로 접속
 # iOS 시뮬레이터: cd mobile && npx expo run:ios
-# Android 에뮬레이터: cd mobile && npx expo run:android
+# Android 네이티브 빌드는 예정 — 개발은 Expo Go / iOS 시뮬레이터 권장
 
 # 4. 웹 참조 구현 (선택)
 cd web && npm install

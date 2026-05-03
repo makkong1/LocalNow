@@ -4,7 +4,7 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
+    "android": "node -e \"console.log('\\n[LocalNow] Android 네이티브 빌드는 아직 예정입니다.\\\\n  - 개발: npx expo start (Expo Go)\\\\n  - 나중에: npx expo prebuild --platform android && npx expo run:android\\\\n'); process.exit(1)\"",
     "ios": "expo run:ios",
     "ios:quiet": "OS_ACTIVITY_MODE=disable expo run:ios",
     "web": "expo start --web",

@@ -144,18 +144,20 @@ module.exports = {
 };
 ```
 
-`mobile/package.json` scripts:
+`mobile/package.json` scripts (발췌):
+
 ```json
 {
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "jest --watchAll=false --passWithNoTests"
   }
 }
 ```
+
+Android 네이티브 빌드는 저장소에서 보류 중이다. 필요 시 `npx expo prebuild --platform android` 후 `expo run:android` 로 재도입하고, 현재는 `npm run android` 가 안내 메시지만 출력한다.
 
 ## Acceptance Criteria
 

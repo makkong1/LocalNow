@@ -84,7 +84,7 @@ cd backend && ./gradlew bootRun       # 서버 실행 (docker compose up 선행)
 # --- mobile ---
 cd mobile && npx expo start           # Metro 개발 서버 (Expo Go 또는 시뮬레이터)
 cd mobile && npx expo run:ios         # iOS 시뮬레이터 빌드 (Xcode 필요)
-cd mobile && npx expo run:android     # Android 에뮬레이터 빌드 (Android Studio 필요)
+# Android 네이티브 빌드는 예정 (필요 시 prebuild 후 run:android)
 cd mobile && npm run lint             # ESLint
 cd mobile && npm test                 # Jest
 
